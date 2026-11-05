@@ -102,6 +102,22 @@ describe('startLoupeSession', () => {
     expect(getOverlay()).toBeNull()
   })
 
+  it('confirms the pixel the loupe shows, not a neighbour under the click', async () => {
+    const s = start()
+    pointer('pointermove', 39.9, 45)
+    // Click coordinates can round into the next source pixel.
+    click(40, 45)
+    await expect(s.result).resolves.toMatchObject({ x: 3, y: 4 })
+  })
+
+  it('confirms the pixel moved to with keys on click', async () => {
+    const s = start()
+    pointer('pointermove', 35, 45)
+    key('ArrowRight')
+    click(35, 45)
+    await expect(s.result).resolves.toMatchObject({ x: 4, y: 4 })
+  })
+
   it('averages with sampleSize', async () => {
     const s = start({ sampleSize: 3 })
     click(55, 55)

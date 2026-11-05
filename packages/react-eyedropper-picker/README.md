@@ -89,7 +89,7 @@ function ImagePicker() {
   return (
     <>
       <img ref={img} src="/photo.jpg" crossOrigin="anonymous" alt="" />
-      <button onClick={pick} disabled={isOpen}>
+      <button onClick={pick} aria-busy={isOpen}>
         Pick a color
       </button>
     </>
@@ -102,6 +102,7 @@ function ImagePicker() {
 - `mode`: `'auto'` (default) uses the loupe when there is a `source`, else the native EyeDropper. `'native'` and `'loupe'` force one.
 - `loupe` options: `defaultMagnification` (8), `minMagnification` (1), `maxMagnification` (64), `magnificationSteps`, controlled `magnification` + `onMagnificationChange`, `size` (120), `shape` (`'circle'` | `'square'`), `grid` (true), `sampleSize` (1 | 3 | 5), `className`.
 - Cross-origin images need CORS (`crossOrigin="anonymous"`), or `open()` rejects with `SecurityError`.
+- Focus returns to the element that was focused before `open()`. Don't disable that button while `isOpen`, or focus is lost (a disabled button can't take focus back).
 
 ### Color utilities
 

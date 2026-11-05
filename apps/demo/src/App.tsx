@@ -1,38 +1,45 @@
 import { useState } from 'react'
 import { ColorPicker, useEyeDropper } from 'react-eyedropper-picker'
-
-const swatches = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899']
+import { LoupeDemo } from './LoupeDemo'
 
 export const App = () => {
-  const [color, setColor] = useState('#3b82f6')
+  const [color, setColor] = useState('#6366f1')
   const { isSupported } = useEyeDropper()
 
   return (
-    <main
-      style={{
-        minHeight: '100vh',
-        margin: 0,
-        display: 'grid',
-        placeItems: 'center',
-        fontFamily: 'system-ui, sans-serif',
-        background: '#f4f4f5',
-      }}
-    >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 24, alignItems: 'center' }}>
-        <h1 style={{ margin: 0, fontSize: 22 }}>react-eyedropper-picker</h1>
-        <ColorPicker value={color} onChange={setColor} />
-        <div style={{ display: 'flex', gap: 8 }}>
-          {swatches.map((s) => (
-            <div key={s} style={{ width: 40, height: 40, borderRadius: 8, background: s }} />
-          ))}
+    <main className="page">
+      <header className="page-header">
+        <h1>react-eyedropper-picker</h1>
+        <p className="muted">
+          React color picker. Native EyeDropper where the browser has it, a
+          pixel-accurate loupe for images everywhere.
+        </p>
+      </header>
+
+      <LoupeDemo onPick={setColor} />
+
+      <section className="card picker-demo" aria-labelledby="picker-title">
+        <header className="card-header">
+          <h2 id="picker-title">Color picker</h2>
+          <p className="muted">Colors picked with the loupe land here too.</p>
+        </header>
+        <div className="picker-row">
+          <ColorPicker value={color} onChange={setColor} />
+          <div className="picker-info">
+            <div
+              className="result-swatch large"
+              style={{ background: color }}
+            />
+            <code className="result-hex">{color}</code>
+            <p className="muted small">
+              Native EyeDropper:{' '}
+              {isSupported
+                ? 'supported — the button picks from anywhere on screen'
+                : 'not available (Chromium only)'}
+            </p>
+          </div>
         </div>
-        <p style={{ margin: 0 }}>
-          Selected: <code>{color}</code>
-        </p>
-        <p style={{ margin: 0, color: '#71717a', fontSize: 13 }}>
-          EyeDropper API: {isSupported ? 'supported ✅' : 'not supported (Chromium only)'}
-        </p>
-      </div>
+      </section>
     </main>
   )
 }

@@ -2,7 +2,12 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "paths": {
-      "react-eyedropper-picker": ["../../packages/react-eyedropper-picker/src/index.ts"]
+      "react-eyedropper-picker": [
+        "../../packages/react-eyedropper-picker/src/index.ts"
+      ],
+      "react-eyedropper-picker/loupe": [
+        "../../packages/react-eyedropper-picker/src/loupe/index.ts"
+      ]
     }
   },
   "include": ["src", "vite.config.ts"]
