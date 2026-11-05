@@ -321,6 +321,10 @@ export const LoupeDemo = ({ onPick }: Props) => {
               <dd>Aim / pick</dd>
               <dt>Wheel</dt>
               <dd>Zoom</dd>
+              <dt>Drag / lift</dt>
+              <dd>Aim / pick (touch)</dd>
+              <dt>Pinch</dt>
+              <dd>Zoom (touch)</dd>
               <dt>
                 <kbd>←</kbd> <kbd>↑</kbd> <kbd>→</kbd> <kbd>↓</kbd>
               </dt>

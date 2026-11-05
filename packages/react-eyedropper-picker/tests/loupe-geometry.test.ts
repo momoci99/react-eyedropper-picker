@@ -6,6 +6,7 @@ import {
   computeCellLayout,
   isGridVisible,
   sourcePixelToClient,
+  touchLoupeCenter,
 } from '../src/loupe/geometry'
 
 describe('clientToSourcePixel', () => {
@@ -164,5 +165,17 @@ describe('sourcePixelToClient', () => {
       const p = sourcePixelToClient(x, y, rect, 100, 50)
       expect(clientToSourcePixel(p.x, p.y, rect, 100, 50)).toEqual({ x, y })
     }
+  })
+})
+
+describe('touchLoupeCenter', () => {
+  it('puts the loupe above the finger', () => {
+    // Bottom edge at 300 - 48 = 252.
+    expect(touchLoupeCenter(100, 300, 120, 48)).toEqual({ x: 100, y: 192 })
+  })
+
+  it('flips below when there is no room at the top', () => {
+    expect(touchLoupeCenter(100, 168, 120, 48)).toEqual({ x: 100, y: 60 })
+    expect(touchLoupeCenter(100, 167, 120, 48)).toEqual({ x: 100, y: 275 })
   })
 })
