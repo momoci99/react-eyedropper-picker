@@ -305,6 +305,7 @@ declare function useLoupeEyeDropper(options?: UseLoupeEyeDropperOptions): {
 ```
 
 - 기본 경로 `useEyeDropper()`는 v0.1과 같은 사용법을 유지한다.
+- Loupe 훅은 확대경을 `document.body`에 plain DOM overlay로 그린다 (2026-11-05 결정). `react-dom` peer 없이 위 반환값 그대로 유지한다. 그래서 `renderLabel`(ReactNode)은 훅이 아니라 `ImageColorPicker`에서 지원하고, 훅은 hex 텍스트 라벨을 쓴다.
 - `isSupported` 의미: 기본 훅은 "순정 지원 여부", Loupe 훅은 "현재 모드 기준". 훅이 나뉘어 의미가 섞이지 않는다.
 - `open()` 실패는 순정 API와 같은 방식(`AbortError`, `NotSupportedError`)으로 reject한다.
   - 현재 v0.1 코드는 미지원 시 일반 `Error`를 던진다. v0.2에서 `DOMException('...', 'NotSupportedError')`로 바꾼다. 미배포라 호환성 부담 없음.

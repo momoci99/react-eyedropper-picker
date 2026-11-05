@@ -5,6 +5,7 @@ import {
   clientToSourcePixel,
   computeCellLayout,
   isGridVisible,
+  sourcePixelToClient,
 } from '../src/loupe/geometry'
 
 describe('clientToSourcePixel', () => {
@@ -140,5 +141,28 @@ describe('isGridVisible', () => {
     expect(isGridVisible(4)).toBe(true)
     expect(isGridVisible(64)).toBe(true)
     expect(isGridVisible(64, false)).toBe(false)
+  })
+})
+
+describe('sourcePixelToClient', () => {
+  const rect = { left: 10, top: 20, width: 200, height: 100 }
+
+  it('returns the pixel center on screen', () => {
+    expect(sourcePixelToClient(0, 0, rect, 100, 50)).toEqual({ x: 11, y: 21 })
+    expect(sourcePixelToClient(99, 49, rect, 100, 50)).toEqual({
+      x: 209,
+      y: 119,
+    })
+  })
+
+  it('round-trips with clientToSourcePixel', () => {
+    for (const [x, y] of [
+      [0, 0],
+      [37, 12],
+      [99, 49],
+    ] as const) {
+      const p = sourcePixelToClient(x, y, rect, 100, 50)
+      expect(clientToSourcePixel(p.x, p.y, rect, 100, 50)).toEqual({ x, y })
+    }
   })
 })

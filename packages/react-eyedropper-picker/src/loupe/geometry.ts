@@ -109,3 +109,15 @@ export const MIN_GRID_CELL_SIZE = 4
 /** Grid lines show only when enabled and each cell is at least 4 CSS px. */
 export const isGridVisible = (magnification: number, grid = true): boolean =>
   grid && magnification >= MIN_GRID_CELL_SIZE
+
+/** Client (viewport) point at the center of source pixel (`x`, `y`). */
+export const sourcePixelToClient = (
+  x: number,
+  y: number,
+  rect: DisplayRect,
+  sourceWidth: number,
+  sourceHeight: number
+): Point => ({
+  x: rect.left + ((x + 0.5) * rect.width) / sourceWidth,
+  y: rect.top + ((y + 0.5) * rect.height) / sourceHeight,
+})
