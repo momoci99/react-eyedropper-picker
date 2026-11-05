@@ -119,6 +119,8 @@ export const startLoupeSession = (
   let badgeTimer: ReturnType<typeof setTimeout> | undefined
   let lastHex = ''
   let lastCursor = ''
+  /** True once the user aimed with a pointer move or a key. */
+  let aimed = false
 
   // ── DOM ──
   const overlay = doc.createElement('div')
@@ -238,6 +240,7 @@ export const startLoupeSession = (
 
   const moveTo = (p: Point) => {
     pixel = p
+    aimed = true
     anchor = sourcePixelToClient(p.x, p.y, rect, srcWidth, srcHeight)
     schedule()
   }
@@ -279,6 +282,7 @@ export const startLoupeSession = (
     (e) => {
       anchor = { x: e.clientX, y: e.clientY }
       pixel = pixelAt(e.clientX, e.clientY)
+      aimed = true
       schedule()
     },
     passive
@@ -287,10 +291,13 @@ export const startLoupeSession = (
   overlay.addEventListener(
     'click',
     (e) => {
-      // Use the click point, not the last move: a tap has no move first.
       const p = pixelAt(e.clientX, e.clientY)
-      if (p) confirm(p)
-      else cancel()
+      if (!p) return cancel()
+      // Confirm what the loupe shows. The click point can land on the next
+      // source pixel when the source is shown smaller than its size (click
+      // and move coordinates round differently), and arrow keys may have
+      // moved off the pointer. A tap with no move first uses its own point.
+      confirm(aimed && pixel ? pixel : p)
     },
     on
   )
