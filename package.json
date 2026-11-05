@@ -2,6 +2,7 @@
   "name": "react-eyedropper-picker-root",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@12.16.1",
   "scripts": {
     "build": "pnpm -C packages/react-eyedropper-picker build",
     "test": "pnpm -C packages/react-eyedropper-picker test",
