@@ -35,6 +35,26 @@ Run `pnpm typecheck && pnpm test` before considering a change done.
 - EyeDropper API is not available everywhere (Chromium only, not in jsdom). Guard with `isEyeDropperSupported`; mock it in tests.
 - Changes to `src/index.ts` exports are public API changes; call them out.
 
+## React best practices
+
+When writing or reviewing React code (library or demo), follow the Vercel skill in `.agents/skills/vercel-react-best-practices/` (`SKILL.md` for the index, `rules/*.md` for details). Read the relevant rule files before implementing.
+
+Rules that matter most for this library (Loupe, pointer tracking, sound):
+
+- `rerender-use-ref-transient-values`: pointer position, current pixel, zoom gesture state live in refs. Draw in `requestAnimationFrame`, not via `setState` per move.
+- `rerender-move-effect-to-event`: open/confirm/cancel/sound logic runs in event handlers, not state + effect.
+- `advanced-event-handler-refs`: store user callbacks (`onPick`, `onMagnificationChange`, ...) in refs so listeners don't re-subscribe.
+- `client-passive-event-listeners`: passive for tracking-only listeners. Wheel/touch listeners that zoom or block scroll call `preventDefault()`, so register them with `{ passive: false }` via `addEventListener` (React's `onWheel` is passive).
+- `rerender-functional-setstate`, `rerender-derived-state-no-effect`, `rerender-dependencies`, `rerender-lazy-state-init`, `rerender-no-inline-components`, `rendering-conditional-render`, `rendering-hoist-jsx`, `rerender-memo-with-default-value`.
+- `bundle-conditional`, `bundle-analyzable-paths`: Loupe code only under the `/loupe` entry; base entry must not import it.
+- `js-*`: pixel loops (sampling, drawing) cache property access, avoid allocations per frame, return early.
+
+Exceptions in this repo (library constraints override the skill):
+
+- React peer is `>=17`: no `useEffectEvent`, `useTransition`, `startTransition`, `useDeferredValue`, `<Activity>`, `useSyncExternalStore` without a shim. Use the ref patterns instead (`advanced-event-handler-refs`).
+- No runtime dependencies: no SWR (`client-swr-dedup`, `client-event-listeners` via `useSWRSubscription`). Dedupe global listeners with a plain module-level registry if needed.
+- Not Next.js / no server code: `server-*`, `async-api-routes`, `next/dynamic`, `optimizePackageImports` don't apply. Keep SSR-safe anyway: no `window`/`document`/`AudioContext` access at module top level or during render (`server-no-shared-module-state`, `sideEffects: false`).
+
 ## npm publish boundary
 
 - The library is published from `packages/react-eyedropper-picker` (`pnpm publish --access public`; `prepublishOnly` runs typecheck, test, build).
