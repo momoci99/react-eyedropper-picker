@@ -26,8 +26,8 @@
   ],
   "sideEffects": false,
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
+    "build": "tsdown",
+    "dev": "tsdown --watch",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc -p tsconfig.json",
@@ -46,7 +46,7 @@
   "author": "momoci99",
   "license": "MIT",
   "peerDependencies": {
-    "react": ">=17"
+    "react": ">=19.2"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.2",
@@ -57,8 +57,8 @@
     "jsdom": "^30.1.3",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "tsup": "^9.0.0",
-    "typescript": "^6",
+    "tsdown": "^0.23.5",
+    "typescript": "^7.0.2",
     "vitest": "^5.1.0"
   }
 }

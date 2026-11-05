@@ -5,7 +5,7 @@ pnpm monorepo for the `react-eyedropper-picker` npm library (a React color picke
 ## Layout
 
 ```
-packages/react-eyedropper-picker   # the published npm library (tsup → ESM + CJS + d.ts)
+packages/react-eyedropper-picker   # the published npm library (tsdown → ESM + CJS + d.ts)
   src/components/                  # ColorPicker, SaturationPanel, HueSlider, EyeDropperButton
   src/hooks/                       # useColorPicker, useEyeDropper, usePointerDrag (internal)
   src/utils/color.ts               # color conversion helpers (all re-exported)
@@ -30,7 +30,11 @@ Run `pnpm typecheck && pnpm test` before considering a change done.
 ## Conventions
 
 - Prettier: no semicolons, single quotes, trailing commas (es5).
-- `react` is a peer dependency (`>=17`). Don't use React APIs newer than 17 in library code without bumping the peer range. Keep the library free of runtime dependencies.
+- `react` is a peer dependency (`>=19.2`). Latest React APIs (`useEffectEvent`, `useId`, `<Activity>`, `useTransition`, ...) are allowed. Keep the library free of runtime dependencies.
+- Use the latest versions of dev dependencies and tools. Check with `pnpm -r outdated`; upgrade with `pnpm -r update --latest`, then run typecheck, test and `pnpm build:demo`.
+- Keep pnpm's default `minimumReleaseAge` (versions published < 24h ago are rejected). "Latest" means the newest version that passes it. Don't disable or exclude around it.
+- pnpm version is pinned by `packageManager` in the root `package.json`; CI reads it from there.
+- Declare every package you import (e.g. `@types/node` for `node:*` in config files). Don't rely on hoisting.
 - `sideEffects: false`: no top-level side effects in `src/`.
 - EyeDropper API is not available everywhere (Chromium only, not in jsdom). Guard with `isEyeDropperSupported`; mock it in tests.
 - Changes to `src/index.ts` exports are public API changes; call them out.
@@ -43,7 +47,7 @@ Rules that matter most for this library (Loupe, pointer tracking, sound):
 
 - `rerender-use-ref-transient-values`: pointer position, current pixel, zoom gesture state live in refs. Draw in `requestAnimationFrame`, not via `setState` per move.
 - `rerender-move-effect-to-event`: open/confirm/cancel/sound logic runs in event handlers, not state + effect.
-- `advanced-event-handler-refs`: store user callbacks (`onPick`, `onMagnificationChange`, ...) in refs so listeners don't re-subscribe.
+- `advanced-use-latest`, `advanced-effect-event-deps`: wrap user callbacks (`onPick`, `onMagnificationChange`, ...) read inside effects or listeners with `useEffectEvent`, and never put the result in effect deps. Use refs (`advanced-event-handler-refs`) only for callbacks called outside effects, such as from `requestAnimationFrame` loops started in an event handler.
 - `client-passive-event-listeners`: passive for tracking-only listeners. Wheel/touch listeners that zoom or block scroll call `preventDefault()`, so register them with `{ passive: false }` via `addEventListener` (React's `onWheel` is passive).
 - `rerender-functional-setstate`, `rerender-derived-state-no-effect`, `rerender-dependencies`, `rerender-lazy-state-init`, `rerender-no-inline-components`, `rendering-conditional-render`, `rendering-hoist-jsx`, `rerender-memo-with-default-value`.
 - `bundle-conditional`, `bundle-analyzable-paths`: Loupe code only under the `/loupe` entry; base entry must not import it.
@@ -51,7 +55,6 @@ Rules that matter most for this library (Loupe, pointer tracking, sound):
 
 Exceptions in this repo (library constraints override the skill):
 
-- React peer is `>=17`: no `useEffectEvent`, `useTransition`, `startTransition`, `useDeferredValue`, `<Activity>`, `useSyncExternalStore` without a shim. Use the ref patterns instead (`advanced-event-handler-refs`).
 - No runtime dependencies: no SWR (`client-swr-dedup`, `client-event-listeners` via `useSWRSubscription`). Dedupe global listeners with a plain module-level registry if needed.
 - Not Next.js / no server code: `server-*`, `async-api-routes`, `next/dynamic`, `optimizePackageImports` don't apply. Keep SSR-safe anyway: no `window`/`document`/`AudioContext` access at module top level or during render (`server-no-shared-module-state`, `sideEffects: false`).
 
