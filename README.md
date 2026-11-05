@@ -3,7 +3,7 @@
 See [packages/react-eyedropper-picker/README.md](packages/react-eyedropper-picker/README.md) for library docs.
 
 ```
-packages/react-eyedropper-picker   # the npm library (tsup → ESM + CJS + d.ts)
+packages/react-eyedropper-picker   # the npm library (tsdown → ESM + CJS + d.ts)
 apps/demo                          # Vite playground (imports library source for HMR)
 ```
 

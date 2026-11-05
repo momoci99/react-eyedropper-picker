@@ -42,7 +42,7 @@
 | `ColorPicker` | 완성형 컴포넌트 (채도/명도 패널, hue 슬라이더, hex 입력, 스포이드 버튼) |
 | `SaturationPanel`, `HueSlider`, `EyeDropperButton` | 조합용 부품 컴포넌트, 키보드 조작 지원 |
 | 색 변환 유틸 | `normalizeHex`, `hexToRgb`, `rgbToHsv`, `hsvToHex` 등 |
-| 빌드/테스트 | pnpm 모노레포, tsup(ESM + CJS + d.ts), vitest 21개 통과 |
+| 빌드/테스트 | pnpm 모노레포, tsdown(ESM + CJS + d.ts, 2026-11-05 tsup에서 교체), vitest 21개 통과 |
 
 ## 2. 배경: 순정 EyeDropper API의 한계
 
