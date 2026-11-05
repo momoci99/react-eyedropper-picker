@@ -1,6 +1,7 @@
 # react-eyedropper-picker 기획서
 
 - 작성일: 2026-11-04
+- 수정일: 2026-11-05 (열린 질문 결정 반영, 감성 효과·자유 배율 추가)
 - 현재 버전: v0.1.0 (스캐폴딩 완료, 미배포)
 - 저장소: https://github.com/momoci99/react-eyedropper-picker
 
@@ -10,19 +11,27 @@
 
 **포지셔닝**
 
-> 순정이 되면 순정, 안 되거나 이미지라면 픽셀 정확한 확대경. 확대경 모양과 효과는 마음대로.
+> 순정이 되면 순정, 안 되거나 이미지라면 픽셀 정확한 확대경. 확대경 모양, 배율, 효과, 소리까지 마음대로.
 
-기본 컬러픽커 시장은 [react-colorful](https://github.com/omgovich/react-colorful)(주간 약 924만 다운로드)이 차지하고 있다. 기본 픽커만으로는 경쟁할 이유가 약하다. 차별점은 **스포이드 경험**에 둔다.
+기본 컬러픽커 시장은 [react-colorful](https://github.com/omgovich/react-colorful)(주간 약 924만 다운로드)이 차지하고 있다. 기본 픽커만으로는 경쟁할 이유가 약하다. 차별점은 **스포이드 경험**에 둔다. 정확도는 기본이고, 그 위에 **만지는 맛**(드르륵 넘어가는 소리, 딸깍 확정되는 느낌, 원하는 만큼 당겨 보는 배율)을 얹는다.
 
-**대상 사용자와 시나리오** (결정 필요, 11장 1번)
+**개발 동기**
+
+**재미있으니까.**
+
+이 프로젝트는 재미를 위해 만든다. 그래서 우선순위를 정할 때 "써 보면 재미있는가"를 수요 근거와 같은 무게로 본다. 감성 효과(6장)는 사용자 근거가 부족해도 넣는다. 재미가 근거다.
+
+**대상 사용자와 시나리오**
+
+주 사용처는 **이미지에서 색 뽑기**로 확정했다 (2026-11-05).
 
 | # | 누가 | 어떤 화면에서 | 무엇을 |
 | --- | --- | --- | --- |
-| S1 | TBD (예: 테마 빌더 개발자) | TBD (예: 로고/사진 업로드 후 브랜드 색 추출) | TBD |
-| S2 | TBD (예: 이미지 에디터 개발자) | TBD (예: canvas 편집 화면) | TBD |
-| S3 | TBD (예: 커머스 개발자) | TBD (예: 상품 이미지에서 옵션 색 추출) | TBD |
+| S1 | 테마 빌더 개발자 | 로고/사진 업로드 화면 | 업로드한 이미지에서 브랜드 색 추출 |
+| S2 | 이미지 에디터 개발자 | canvas 편집 화면 | 레이어의 픽셀 색을 정확히 집기, 크게 확대해 경계 픽셀 고르기 |
+| S3 | 커머스 개발자 | 상품 이미지 관리 화면 | 상품 사진에서 옵션 색(색상 칩) 추출 |
 
-대표 시나리오가 정해져야 v0.2 범위, 기본값(배율, 지름), 효과 우선순위를 판단할 수 있다.
+기본값(배율 8x, 지름 120px)은 S1~S3 공통으로 사진 한 영역을 집는 상황 기준이다. S2처럼 크게 당겨 봐야 하는 경우는 자유 배율(6장)로 해결한다.
 
 **v0.1.0에 이미 있는 것**
 
@@ -127,7 +136,7 @@ flowchart TD
     D -- 아니오 --> E[NotSupportedError]
 ```
 
-**폴백 UX (결정 필요)**: source 없음 + 순정 미지원(Firefox, Safari, 모바일) + capture 없음이면 `NotSupportedError`다. 즉 "전 브라우저 지원"은 source가 있을 때만 성립한다. 이때 `ColorPicker`의 스포이드 버튼을 숨길지, 비활성화+툴팁으로 안내할지 정해야 한다.
+**폴백 UX (결정: 숨김)**: source 없음 + 순정 미지원(Firefox, Safari, 모바일) + capture 없음이면 `NotSupportedError`다. 즉 "전 브라우저 지원"은 source가 있을 때만 성립한다. 이때 `ColorPicker`의 스포이드 버튼은 **숨긴다**. v0.1의 현재 동작과 같다. 못 쓰는 버튼을 보여 주지 않는다.
 
 ### Screen capture 모드
 
@@ -149,8 +158,9 @@ flowchart TD
 | --- | --- |
 | 대상 | `HTMLImageElement`, `HTMLCanvasElement` |
 | 픽셀 읽기 | 오프스크린 canvas에 원본 해상도로 한 번 그리고 `getImageData` 결과 캐시 (`willReadFrequently: true`) |
-| 확대 | 배율 기본 8x, 옵션으로 지정. 확대 렌더링은 `imageSmoothingEnabled = false` |
-| 그리드 | 픽셀 경계선 on/off |
+| 확대 | 배율 기본 8x. 확대 렌더링은 `imageSmoothingEnabled = false`. 자세한 내용은 아래 "자유 배율" |
+| 배율 조절 | 휠, 핀치, `+`/`-` 키로 열린 상태에서 배율 변경 |
+| 그리드 | 픽셀 경계선 on/off. 한 칸이 4px 미만이면 자동으로 숨김 |
 | 중앙 표시 | 중앙 픽셀 테두리 강조 + 현재 색 라벨 (hex) |
 | 모양 | 원형 / 사각형 |
 | 크기 | 확대경 지름 옵션 (기본 120px) |
@@ -161,8 +171,28 @@ flowchart TD
 | 키보드 | 방향키 1px 이동, Shift+방향키 10px, Enter 확정, Esc 취소 |
 | 취소 | `AbortSignal`, Esc, 대상 밖 클릭 → `AbortError` |
 | 클릭 차단 | 스포이드 모드 중 오버레이가 포인터 이벤트를 가로챔 |
+| 이벤트 | 중앙 픽셀 변경, 배율 변경, 열림/확정/취소 이벤트를 내보냄. v0.3 사운드가 여기에 붙는다 |
 
-### 효과 (v0.3)
+### 자유 배율 (v0.2, 필수)
+
+배율은 **사용자가 마음껏** 정한다. 고정 배율이 경쟁 라이브러리의 한계였다 (eyedropper-polyfill은 12배 고정).
+
+| 항목 | 명세 |
+| --- | --- |
+| 값 | 1 이상 아무 숫자. 소수 허용 (예: 2.5, 13) |
+| 범위 | 기본 1~64. `minMagnification` / `maxMagnification`로 넓히거나 좁힘. 라이브러리가 정한 상한은 없음 |
+| 제어 | `magnification`(제어) + `onMagnificationChange`, 또는 `defaultMagnification`(비제어) |
+| 휠 | 한 칸에 ×1.1(연속). `magnificationSteps`를 주면 그 값들 사이를 한 칸씩 이동 (예: `[2, 4, 8, 16, 32]`) |
+| 핀치 | 두 손가락 거리 비율만큼 연속 변경 |
+| 키보드 | `+` / `-`로 한 단계, `0`으로 기본 배율 복귀 |
+| 소수 배율 렌더링 | 칸 경계를 `Math.round(i * m)`으로 계산. 칸 크기가 1px씩 다를 수 있지만 그리드와 칸이 항상 맞물리고, 중앙 픽셀은 항상 정중앙에 온다 |
+| 표시 | 배율이 바뀌는 동안 확대경 아래에 현재 배율(예: `12.5×`)을 잠깐 표시 |
+
+### 효과와 감성 (v0.3, 필수)
+
+개발 동기(1장)가 "재미"이므로 효과는 미루지 않는다. 시각 효과와 함께 **소리와 손맛**을 강조한다.
+
+**시각 효과**
 
 | 항목 | 명세 |
 | --- | --- |
@@ -170,37 +200,45 @@ flowchart TD
 | 열림/닫힘 | 확대경이 커지며 등장, 줄어들며 사라짐 |
 | 확정 연출 | 확정 시 색이 대상 스와치 쪽으로 이동하는 연출 (선택) |
 | 색 라벨 전환 | 색 변경 시 라벨 배경 전환 애니메이션 |
-| 배율 조절 | 휠 / 핀치로 배율 변경 |
+| 배율 전환 | 배율 변경 시 확대 화면이 부드럽게 줌 |
+| 틱 연동 | 틱 소리와 맞춰 중앙 칸 테두리가 짧게 반짝임 (선택) |
 | 모션 감소 | `prefers-reduced-motion`이면 보간과 애니메이션 끔 |
+
+**소리와 손맛**
+
+확대경을 움직일 때 기계식 다이얼처럼 **드르륵** 넘어가는 소리를 낸다.
+
+| 순간 | 소리 | 규칙 |
+| --- | --- | --- |
+| 픽셀 이동 | 짧은 틱 | 중앙 픽셀(원본 기준)이 바뀔 때마다 한 번. 배율이 높으면 "딸깍… 딸깍", 빠르게 훑으면 "드르르륵" |
+| 배율 변경 | 디텐트 틱 (픽셀 틱과 다른 음색) | 배율 한 단계(또는 ×1.1)마다 한 번 |
+| 열림 | 짧은 "슉" | 스포이드가 열릴 때 |
+| 확정 | 또렷한 "딸깍" | 색 확정 시 |
+| 취소 | 낮은 톤 | Esc, 대상 밖 클릭 |
+
+- **드르륵 질감**: 틱 사이 최소 간격(기본 25ms)보다 빠르면 합쳐서 한 번만 낸다. 이동 속도에 따라 음량과 음높이를 조금 올리고, 틱마다 음높이를 ±5% 흔들어 단조로움을 없앤다.
+- **구현**: Web Audio API로 소리를 합성한다. 오디오 파일이 없으니 번들이 작고 네트워크 요청도 없다.
+- **자동재생 정책**: `AudioContext`는 `open()`(사용자 동작) 안에서 만들거나 `resume()`한다.
+- **커스텀**: 음량, 이벤트별 on/off, 이벤트별 재생 함수 주입(직접 만든 소리나 `AudioBuffer` 사용) 지원.
+- **햅틱**: `navigator.vibrate`로 픽셀 틱과 확정에 짧은 진동. Android Chrome에서 동작하고, 지원하지 않는 브라우저(iOS Safari 등)에서는 조용히 무시한다.
+- **기본값**: 라이브러리 기본은 **꺼짐**(`sound: false`, `haptics: false`). 앱에서 갑자기 소리가 나면 안 되기 때문이다. 옵션 한 줄로 켠다. **데모는 켜진 상태**로 보여 준다.
+- 탭이 숨겨지면(`visibilitychange`) 소리를 멈춘다.
 
 ### 렌더링 원칙
 
 - 그리기는 `requestAnimationFrame` 안에서만. 포인터 이벤트에서는 좌표만 저장.
 - 확대경은 별도 canvas 하나에 그린다. DOM 노드를 픽셀마다 만들지 않는다.
 - `devicePixelRatio`를 반영해 확대경 canvas를 고해상도로 그린다.
+- 배율이 높을수록 그릴 원본 픽셀 수는 줄어든다 (지름 120px, 64배면 약 2x2 픽셀). 배율과 관계없이 그리는 비용은 확대경 canvas 크기로 정해진다.
 
 ## 7. API 초안
 
-확정 전 초안이다. 이름은 11장 열린 질문에서 결정한다.
+확정 전 초안이다. 훅 구조는 **A안(훅 둘)**으로 결정했다 (2026-11-05). 기본 경로에 Loupe 코드가 들어가지 않는다.
 
 ### 훅
 
 ```ts
-type PickMode = 'auto' | 'native' | 'loupe'
-
-type PickSource = HTMLImageElement | HTMLCanvasElement | HTMLVideoElement
-
-type LoupeOptions = {
-  magnification?: number        // 기본 8
-  size?: number                 // 확대경 지름 px, 기본 120
-  shape?: 'circle' | 'square'   // 기본 'circle'
-  grid?: boolean                // 기본 true
-  sampleSize?: 1 | 3 | 5        // 기본 1
-  smoothing?: number            // 0~1 추적 보간, 0이면 즉시 (v0.3)
-  className?: string
-  renderLabel?: (color: PickResult) => React.ReactNode
-}
-
+// ── react-eyedropper-picker (기본 경로): 순정 전용 ──
 type PickResult = {
   sRGBHex: string               // 순정 API와 같은 키
   x?: number                    // Loupe 모드일 때 원본 픽셀 좌표
@@ -208,13 +246,57 @@ type PickResult = {
   mode: 'native' | 'loupe'
 }
 
-type UseEyeDropperOptions = {
+declare function useEyeDropper(): {
+  open: (opts?: { signal?: AbortSignal }) => Promise<PickResult>
+  close: () => void
+  isSupported: boolean          // 순정 EyeDropper 지원 여부 (v0.1과 같은 의미)
+  isOpen: boolean
+}
+
+// ── react-eyedropper-picker/loupe: auto / loupe 지원 ──
+type PickMode = 'auto' | 'native' | 'loupe'
+
+type PickSource = HTMLImageElement | HTMLCanvasElement | HTMLVideoElement
+
+type LoupeSoundEvent = 'pixel' | 'zoom' | 'open' | 'confirm' | 'cancel'
+
+type LoupeSoundOptions = {
+  volume?: number               // 0~1, 기본 0.5
+  events?: Partial<Record<LoupeSoundEvent, boolean>>   // 이벤트별 on/off
+  minTickInterval?: number      // ms, 기본 25. 이보다 빠른 틱은 합침
+  play?: Partial<Record<LoupeSoundEvent, (ctx: AudioContext, speed: number) => void>>  // 직접 만든 소리
+}
+
+type LoupeOptions = {
+  // 자유 배율 (v0.2)
+  magnification?: number        // 제어 모드
+  defaultMagnification?: number // 비제어 모드, 기본 8
+  minMagnification?: number     // 기본 1
+  maxMagnification?: number     // 기본 64, 상한 없음
+  magnificationSteps?: number[] // 주면 휠/키가 이 값들 사이를 이동
+  onMagnificationChange?: (value: number) => void
+
+  size?: number                 // 확대경 지름 px, 기본 120
+  shape?: 'circle' | 'square'   // 기본 'circle'
+  grid?: boolean                // 기본 true (칸 4px 미만이면 자동 숨김)
+  sampleSize?: 1 | 3 | 5        // 기본 1
+  className?: string
+  renderLabel?: (color: PickResult) => React.ReactNode
+
+  // 효과와 감성 (v0.3)
+  smoothing?: number            // 0~1 추적 보간, 0이면 즉시
+  sound?: boolean | LoupeSoundOptions   // 기본 false
+  haptics?: boolean             // 기본 false
+}
+
+type UseLoupeEyeDropperOptions = {
   mode?: PickMode               // 기본 'auto'
+  source?: PickSource | React.RefObject<PickSource>   // open()에서 덮어쓸 수 있음
   loupe?: LoupeOptions
   capture?: () => Promise<HTMLCanvasElement | ImageBitmap>  // v0.4
 }
 
-declare function useEyeDropper(options?: UseEyeDropperOptions): {
+declare function useLoupeEyeDropper(options?: UseLoupeEyeDropperOptions): {
   open: (opts?: { source?: PickSource; signal?: AbortSignal }) => Promise<PickResult>
   close: () => void
   isSupported: boolean          // 현재 모드 기준 사용 가능 여부
@@ -222,37 +304,42 @@ declare function useEyeDropper(options?: UseEyeDropperOptions): {
 }
 ```
 
-- v0.1의 `useEyeDropper()`는 인자 없이 호출하면 기존처럼 동작하도록 유지한다.
+- 기본 경로 `useEyeDropper()`는 v0.1과 같은 사용법을 유지한다.
+- `isSupported` 의미: 기본 훅은 "순정 지원 여부", Loupe 훅은 "현재 모드 기준". 훅이 나뉘어 의미가 섞이지 않는다.
 - `open()` 실패는 순정 API와 같은 방식(`AbortError`, `NotSupportedError`)으로 reject한다.
   - 현재 v0.1 코드는 미지원 시 일반 `Error`를 던진다. v0.2에서 `DOMException('...', 'NotSupportedError')`로 바꾼다. 미배포라 호환성 부담 없음.
-- `isSupported`의 의미가 v0.1의 "순정 지원 여부"에서 "현재 모드 기준"으로 바뀐다. 배포 전에 확정한다.
-
-**번들 분리와의 충돌 (결정 필요)**: 위 초안대로면 기본 경로의 `useEyeDropper`가 `mode: 'auto' | 'loupe'`를 받는다. 기본 경로 훅이 Loupe로 넘어가려면 Loupe 코드가 기본 번들에 들어가므로 "기본 사용자 번들에 Loupe 없음" 목표가 깨진다.
-
-| 안 | 내용 | 장점 | 단점 |
-| --- | --- | --- | --- |
-| A | 기본 경로 `useEyeDropper`는 native 전용. `/loupe`가 auto 지원 훅(예: `useLoupeEyeDropper`)을 export | 단순, 번들 분리 확실 | 훅이 둘 |
-| B | 기본 훅이 `engine` 옵션으로 Loupe 엔진을 주입받음 (`import { loupeEngine } from '.../loupe'`) | 훅 하나 | API 복잡도 증가 |
+- `mode: 'auto'`에서 순정이 지원되더라도 `source`가 있으면 Loupe를 쓴다. source를 줬다는 것은 그 대상에서 뽑겠다는 뜻이다.
 
 ### 컴포넌트
 
 ```tsx
-// 이미지에서 색 뽑기
+// 이미지에서 색 뽑기 (react-eyedropper-picker/loupe)
 <ImageColorPicker
   src="/photo.jpg"
   onPick={({ sRGBHex, x, y }) => {}}
-  loupe={{ magnification: 10, sampleSize: 3 }}
+  loupe={{
+    defaultMagnification: 10,
+    maxMagnification: 128,
+    sampleSize: 3,
+    sound: true,
+    haptics: true,
+  }}
 />
 
-// 기존 ColorPicker의 스포이드 버튼이 Loupe 대상도 받도록 확장
-<ColorPicker value={color} onChange={setColor} eyeDropper={{ source: imgRef }} />
+// 기존 ColorPicker에 Loupe 스포이드 연결
+// ColorPicker는 { open, isSupported } 모양의 객체만 받으므로 기본 경로에 Loupe 코드가 들어가지 않는다.
+const dropper = useLoupeEyeDropper({ source: imgRef, loupe: { sound: true } })
+<ColorPicker value={color} onChange={setColor} eyeDropper={dropper} />
 ```
+
+- `eyeDropper`를 안 주면 기본 경로 `useEyeDropper()`(순정)를 쓴다.
+- `eyeDropper.isSupported`가 false면 스포이드 버튼을 숨긴다 (5장 폴백 UX).
 
 ### 패키지 경로 분리
 
 ```
 react-eyedropper-picker          # ColorPicker, 부품, useColorPicker, useEyeDropper(native), 유틸
-react-eyedropper-picker/loupe    # Loupe 엔진, ImageColorPicker
+react-eyedropper-picker/loupe    # Loupe 엔진, useLoupeEyeDropper, ImageColorPicker, 사운드
 ```
 
 기본 경로만 쓰는 사용자의 번들에 Loupe 코드가 들어가지 않게 한다.
@@ -269,13 +356,17 @@ react-eyedropper-picker/loupe    # Loupe 엔진, ImageColorPicker
 | `<video>` | 프레임이 계속 바뀜 | 스포이드를 열 때 현재 프레임을 고정해서 사용 (v0.4) |
 | 접근성 | 마우스 전용이 되기 쉬움 | 키보드 조작, 포커스 이동, `aria-live`로 현재 색 읽기, 모션 감소 대응 |
 | 터치 | 손가락이 대상을 가림 | 확대경 오프셋, 확정 방식(손 뗄 때) 명시 |
+| 사운드 거부감 | 앱에서 갑자기 소리가 나면 사용자가 불쾌해함 | 기본 꺼짐, 음량 옵션, 이벤트별 끄기, 탭 숨김 시 정지 |
+| 자동재생 정책 | 사용자 동작 없이 만든 `AudioContext`는 소리가 안 남 | `open()`(사용자 동작) 안에서 생성/resume |
+| 틱 과다 | 빠르게 훑으면 틱이 수백 번 겹쳐 시끄러움 | 최소 간격(25ms) 안의 틱은 합침, 동시 재생 수 제한 |
+| 자유 배율 | 소수 배율에서 칸 크기가 들쭉날쭉해 그리드가 어긋날 수 있음 | 칸 경계를 반올림 계산으로 고정, 중앙 픽셀은 항상 정중앙 |
 
 ## 9. 로드맵
 
 ```mermaid
 flowchart LR
-    V01["v0.1 (완료)<br/>스캐폴딩<br/>ColorPicker + 순정 훅"] --> V02["v0.2<br/>Loupe MVP<br/>img, canvas"]
-    V02 --> V03["v0.3<br/>효과, 테마<br/>색 히스토리"]
+    V01["v0.1 (완료)<br/>스캐폴딩<br/>ColorPicker + 순정 훅"] --> V02["v0.2 (첫 npm 공개)<br/>Loupe MVP, 자유 배율<br/>img, canvas"]
+    V02 --> V03["v0.3<br/>효과, 사운드, 햅틱<br/>테마, 색 히스토리"]
     V03 --> V04["v0.4<br/>video, capture 플러그인<br/>Screen capture 실험"]
     V04 --> V10["v1.0<br/>문서 사이트, 데모<br/>API 고정"]
 ```
@@ -283,13 +374,14 @@ flowchart LR
 | 버전 | 범위 | 완료 조건 |
 | --- | --- | --- |
 | v0.1 | 프로젝트 구조, ColorPicker, 순정 훅, 테스트 | 완료 (미배포) |
-| v0.2 | Loupe 엔진, `ImageColorPicker`, 확대/그리드/샘플링/좌표, 키보드, 터치, `/loupe` 경로, `ColorPicker`의 `eyeDropper={{ source }}` 확장, GitHub Pages 데모 | jsdom 단위 테스트 + 실제 브라우저(Chrome, Firefox, Safari, 모바일 Safari) 수동 확인 + 데모 공개 |
-| v0.3 | 부드러운 추적, 등장/확정 애니메이션, 배율 조절, CSS 변수 테마, 다크 모드, 색 히스토리(근거 보강 필요), 손가락 위 색 말풍선 | 모션 감소 대응 확인, 데모에서 효과 시연 |
+| v0.2 | Loupe 엔진, `useLoupeEyeDropper`, `ImageColorPicker`, 확대/그리드/샘플링/좌표, **자유 배율**(휠·핀치·키보드, min/max/steps), 키보드, 터치, Loupe 이벤트, `/loupe` 경로, `ColorPicker`의 `eyeDropper` prop, GitHub Pages 데모, `package.json` description 갱신, **첫 npm 공개** | jsdom 단위 테스트 + 실제 브라우저(Chrome, Firefox, Safari, 모바일 Safari) 수동 확인 + 데모 공개 + npm 배포 |
+| v0.3 | 부드러운 추적, 등장/확정 애니메이션, 배율 전환 애니메이션, **사운드(드르륵 틱, 확정 딸깍), 햅틱**, CSS 변수 테마, 다크 모드, 색 히스토리(근거 보강 필요), 손가락 위 색 말풍선 | 모션 감소 대응 확인, 데모에서 효과와 소리 시연(데모는 소리 켠 상태), Android 진동 확인 |
 | v0.4 | `<video>` 대상, `capture` 플러그인 구조, `getDisplayMedia` 예제 | 플러그인으로 html2canvas와 getDisplayMedia 둘 다 연결되는 예제 |
 | v1.0 | 문서 사이트, GitHub Pages 데모, API 고정, 번들 크기 예산 | semver 1.0 공개 |
 
 CI(GitHub Actions: 테스트, 타입체크, 빌드)는 v0.2 작업 시작 전에 추가한다.
 
+- v0.1은 npm에 내지 않는다. v0.2(Loupe + 데모)를 첫 공개로 한다. 2026-11-05 기준 npm에 `react-eyedropper-picker` 이름이 비어 있어 선점이 급하지 않다.
 - 데모는 v1.0이 아니라 v0.2 공개와 함께 낸다. 확대경은 직접 봐야 가치가 전달된다. v1.0은 문서 사이트를 정식화한다.
 - 버전별 목표 시점: TBD. 투입 가능 시간을 기준으로 정한다.
 
@@ -305,32 +397,29 @@ CI(GitHub Actions: 테스트, 타입체크, 빌드)는 v0.2 작업 시작 전에
 
 ## 10. 테스트 전략
 
-- **단위 테스트(vitest + jsdom)**: 색 변환, 샘플링 평균 계산, 좌표 변환, 모드 선택 로직, 키보드 조작.
+- **단위 테스트(vitest + jsdom)**: 색 변환, 샘플링 평균 계산, 좌표 변환, 모드 선택 로직, 키보드 조작, 배율 계산(범위 제한, steps 이동, 휠/핀치 비율, 소수 배율 칸 경계), 틱 스케줄링(픽셀 변경 시 1회, 최소 간격 내 합침). Web Audio는 mock으로 호출 여부만 확인.
+- **소리 확인**: 소리 질감(드르륵 느낌)은 자동 테스트로 판단할 수 없다. 데모에서 직접 들어 보고 조정한다.
 - **브라우저 테스트**: jsdom에는 canvas 픽셀 읽기가 없다. Loupe 렌더링은 Vitest Browser Mode 또는 Playwright로 실제 브라우저에서 검증한다.
 - **수동 확인 목록**: Chrome, Firefox, Safari 데스크톱, iOS Safari, Android Chrome에서 확대경 위치, 터치 확정, 레티나 좌표.
 
 ## 11. 열린 질문
 
-### v0.2 착수 전 필수
+### 결정됨 (2026-11-05)
 
-- [ ] 주 사용처를 "이미지에서 색 뽑기"로 확정할 것인가? (추천: 예) → 확정 후 1장 대상 사용자 표를 채운다.
-- [ ] 훅 구조: 7장 번들 분리 충돌의 A안 / B안 중 무엇으로 할 것인가?
-- [ ] 폴백 UX: 순정 미지원 + source 없음일 때 스포이드 버튼을 숨길 것인가, 비활성화+안내할 것인가?
-
-### 배포 전 필수
-
-- [ ] 패키지 이름 `react-eyedropper-picker`를 유지할 것인가? Loupe가 핵심이 되면 이름이 기능을 다 설명하지 못한다. 배포 후 변경은 비용이 크다. (`package.json` description도 함께 갱신)
-- [ ] 첫 공개 버전: v0.1을 이름 선점용으로 먼저 낼 것인가, v0.2(Loupe)를 첫 공개로 할 것인가?
-
-### v0.2 설계 중 결정
-
-- [ ] `mode: 'auto'`에서 순정이 지원되지만 `source`도 지정된 경우 Loupe 우선이 맞는가? (추천: 예. source 명시 = 의도 있음)
-- [ ] 컴포넌트 이름: `ImageColorPicker` / `MagnifierPicker` / `Loupe` 중 무엇으로 할 것인가? (1번 결정에 따름)
-- [ ] v0.2 범위 축소 여부: 터치 최적화와 샘플링 반경을 v0.2.x로 뺄 것인가?
+- [x] 주 사용처: **이미지에서 색 뽑기**로 확정. 1장 대상 사용자 표 채움.
+- [x] 훅 구조: **A안**. 기본 경로 `useEyeDropper`는 순정 전용, `/loupe`가 `useLoupeEyeDropper` 제공 (7장).
+- [x] 폴백 UX: 순정 미지원 + source 없음이면 스포이드 버튼 **숨김** (5장).
+- [x] 패키지 이름: `react-eyedropper-picker` **유지**. `package.json` description은 v0.2 공개 때 갱신.
+- [x] 첫 공개 버전: **v0.2**(Loupe + 데모). v0.1은 npm에 내지 않음.
+- [x] `mode: 'auto'`에서 순정 지원 + `source` 지정 시: **Loupe 우선**.
+- [x] 컴포넌트 이름: **`ImageColorPicker`** (주 사용처가 이미지이므로).
+- [x] v0.2 범위 축소: **안 함**. 터치 최적화와 샘플링 반경 모두 v0.2에 포함.
+- [x] 효과 우선순위: **미루지 않음**. 개발 동기가 "재미"이므로 v0.3에 효과와 사운드를 넣는다.
+- [x] 추가 필수 기능: **확대경 감성 효과**(드르륵 틱 소리, 확정 딸깍, 햅틱, v0.3)와 **자유 배율**(v0.2) (6장).
+- [x] 사운드 기본값: 라이브러리 **꺼짐**, 데모 **켜짐**.
 
 ### 후순위
 
-- [ ] 효과(v0.3)의 우선순위: 사용자 근거가 없다. 정확도·크로스 브라우저가 차별점이라면 효과는 v1.0 이후로 미룰 것인가?
 - [ ] 알파 채널(투명도) 지원을 v0.3에 넣을 것인가?
 - [ ] React 외 프레임워크 지원을 위해 Loupe 엔진을 프레임워크 독립 코어로 분리할 것인가?
 
