@@ -17,6 +17,16 @@
         "default": "./dist/index.cjs"
       }
     },
+    "./loupe": {
+      "import": {
+        "types": "./dist/loupe.d.ts",
+        "default": "./dist/loupe.js"
+      },
+      "require": {
+        "types": "./dist/loupe.d.cts",
+        "default": "./dist/loupe.cjs"
+      }
+    },
     "./package.json": "./package.json"
   },
   "files": [

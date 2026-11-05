@@ -62,6 +62,47 @@ const { open, close, isSupported } = useEyeDropper()
 const { sRGBHex } = await open() // rejects with AbortError on cancel/close
 ```
 
+### Loupe: pick from an image or canvas
+
+`react-eyedropper-picker/loupe` adds a pixel-accurate magnifier that works in every browser. It is a separate entry, so apps that only use the base entry don't bundle it.
+
+```tsx
+import { useRef } from 'react'
+import { useLoupeEyeDropper } from 'react-eyedropper-picker/loupe'
+
+function ImagePicker() {
+  const img = useRef<HTMLImageElement>(null)
+  const { open, isOpen } = useLoupeEyeDropper({
+    source: img,
+    loupe: { defaultMagnification: 8, sampleSize: 1 },
+  })
+
+  const pick = async () => {
+    try {
+      const { sRGBHex, x, y } = await open()
+      console.log(sRGBHex, x, y) // x, y: source pixel
+    } catch (e) {
+      // AbortError: cancelled (Escape, click outside, close())
+    }
+  }
+
+  return (
+    <>
+      <img ref={img} src="/photo.jpg" crossOrigin="anonymous" alt="" />
+      <button onClick={pick} disabled={isOpen}>
+        Pick a color
+      </button>
+    </>
+  )
+}
+```
+
+- Mouse: move to aim, click to pick, click outside the image to cancel, wheel to zoom.
+- Keyboard: arrows move 1px (Shift: 10px), Enter picks, Escape cancels, `+` / `-` zoom, `0` resets.
+- `mode`: `'auto'` (default) uses the loupe when there is a `source`, else the native EyeDropper. `'native'` and `'loupe'` force one.
+- `loupe` options: `defaultMagnification` (8), `minMagnification` (1), `maxMagnification` (64), `magnificationSteps`, controlled `magnification` + `onMagnificationChange`, `size` (120), `shape` (`'circle'` | `'square'`), `grid` (true), `sampleSize` (1 | 3 | 5), `className`.
+- Cross-origin images need CORS (`crossOrigin="anonymous"`), or `open()` rejects with `SecurityError`.
+
 ### Color utilities
 
 `normalizeHex`, `isValidHex`, `hexToRgb`, `rgbToHex`, `rgbToHsv`, `hsvToRgb`, `hexToHsv`, `hsvToHex`.
