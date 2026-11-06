@@ -10,22 +10,27 @@ packages/react-eyedropper-picker   # the published npm library (tsdown → ESM +
   src/hooks/                       # useColorPicker, useEyeDropper, usePointerDrag (internal)
   src/utils/color.ts               # color conversion helpers (all re-exported)
   src/index.ts                     # public API — every export here is public surface
+  src/loupe/                       # `/loupe` entry: ImageColorPicker, useLoupeEyeDropper
   tests/                           # vitest + jsdom + Testing Library
 apps/demo                          # private Vite playground; aliases library *source* for HMR
+  e2e/desktop, e2e/mobile          # Playwright checks in real Chromium (mouse / touch)
 ```
 
 ## Commands (run from root, Node 24 per .nvmrc)
 
 ```bash
 pnpm install
-pnpm dev          # demo at http://localhost:5173
+pnpm dev          # demo at http://localhost:5173, opens the browser
+pnpm dev:host     # same, also on the LAN: open the "Network" URL on a phone
 pnpm test         # vitest run (library)
 pnpm typecheck    # all workspaces
 pnpm build        # build library to packages/react-eyedropper-picker/dist
 pnpm format       # prettier (format:check in CI)
+pnpm e2e          # Playwright against the demo (own server on :5199)
+pnpm e2e:install  # once: download Playwright's Chromium
 ```
 
-Run `pnpm format && pnpm typecheck && pnpm test` before considering a change done.
+Run `pnpm format && pnpm typecheck && pnpm test` before considering a change done. For pointer, touch, loupe or demo changes, also run `pnpm e2e`. jsdom has no layout or real pixels, so e2e is where picked colors are checked against the image.
 
 ## Conventions
 
