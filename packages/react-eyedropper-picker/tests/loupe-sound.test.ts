@@ -234,6 +234,21 @@ describe('createLoupeSound', () => {
     sound.destroy()
   })
 
+  it('makes fast ticks quieter, not louder', async () => {
+    const { sound, ctx } = await unlocked()
+    vi.spyOn(Math, 'random').mockReturnValue(0.5)
+    sound.play('cancel') // makes the output gain first
+    /** Peak of the noise burst envelope of a tick at `speed`. */
+    const tickPeak = (speed: number) => {
+      ctx.currentTime += 1
+      const first = ctx.gains.length
+      sound.play('pixel', speed)
+      return ctx.gains[first]!.gain.calls[1]![1]
+    }
+    expect(tickPeak(1)).toBeLessThan(tickPeak(0))
+    sound.destroy()
+  })
+
   it('stays silent and suspends while the tab is hidden', async () => {
     const { sound, ctx } = await unlocked()
     setVisibility('hidden')

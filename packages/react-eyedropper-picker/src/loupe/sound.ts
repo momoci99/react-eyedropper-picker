@@ -17,7 +17,7 @@ export type LoupeSoundOptions = {
   volume?: number
   /** Turn single events off, e.g. `{ pixel: false }`. All on by default. */
   events?: Partial<Record<LoupeSoundEvent, boolean>>
-  /** Ticks closer than this (ms) merge into one. Default 25. */
+  /** Ticks closer than this (ms) merge into one. Default 35. */
   minTickInterval?: number
   /** Replace the built-in sound of an event. */
   play?: Partial<Record<LoupeSoundEvent, LoupeSoundPlayer>>
@@ -31,7 +31,7 @@ export type ResolvedSoundOptions = {
 }
 
 export const DEFAULT_SOUND_VOLUME = 0.5
-export const DEFAULT_MIN_TICK_INTERVAL = 25
+export const DEFAULT_MIN_TICK_INTERVAL = 35
 
 /** Built-in sounds playing at once; more are dropped. */
 export const MAX_VOICES = 6
@@ -190,31 +190,34 @@ const tone = (
   return osc
 }
 
-/** Ratchet tick. Faster moves sound a bit louder and higher. */
+/**
+ * Ratchet tick. Slow moves get a crisp click; fast sweeps get softer,
+ * quieter ticks that blur into a light "brrrt" instead of a harsh buzz.
+ */
 const pixelVoice: Voice = (ctx, out, t, speed, jitter) => {
-  const lift = 1 + 0.3 * speed
-  const level = 0.6 + 0.4 * speed
+  const lift = 1 + 0.15 * speed
+  const level = 1 - 0.5 * speed
   noiseBurst(
     ctx,
     out,
     t,
     'bandpass',
-    3200 * lift * jitter,
-    3,
-    0.5 * level,
-    0.012
+    2400 * lift * jitter,
+    2.5,
+    0.35 * level,
+    0.01
   )
   tone(
     ctx,
     out,
     t,
     'sine',
-    2100 * lift * jitter,
-    2100 * lift * jitter,
-    0.08 * level,
-    0.01
+    1500 * lift * jitter,
+    1500 * lift * jitter,
+    0.05 * level,
+    0.008
   )
-  return 0.025
+  return 0.02
 }
 
 /** Zoom detent: lower and woodier than the pixel tick. */

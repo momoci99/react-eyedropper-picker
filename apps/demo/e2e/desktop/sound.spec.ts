@@ -1,4 +1,4 @@
-import { expect, frame, loupeDemo, pixelPoint, test } from '../helpers'
+import { expect, frame, loupeDemo, pixelPoint, test, truth } from '../helpers'
 
 // Sounds can't be heard here; count the Web Audio sources the loupe starts.
 test.beforeEach(async ({ page }) => {
@@ -81,10 +81,24 @@ test('open mode: open, ticks and cancel sound', async ({ page }) => {
 })
 
 test('sound off: silent', async ({ page }) => {
-  const { image, sound } = loupeDemo(page)
+  const { image, sound, hex } = loupeDemo(page)
   await sound.uncheck()
+  // The checkbox is further down; bring the image back.
+  await image.scrollIntoViewIfNeeded()
   await sweep(page, 8)
   await page.mouse.click(...(await pixelPoint(image, 11, 10)))
-  await frame(page)
+  await expect(hex).toHaveText(await truth(image, 11, 10))
   expect(await starts(page)).toBe(0)
+})
+
+test('pixel ticks off: moving is silent, picking still clicks', async ({
+  page,
+}) => {
+  const { image, soundEvent } = loupeDemo(page)
+  await soundEvent(/Pixel ticks/).uncheck()
+  await image.scrollIntoViewIfNeeded()
+  await sweep(page, 8)
+  expect(await starts(page)).toBe(0)
+  await page.mouse.click(...(await pixelPoint(image, 11, 10)))
+  await expect.poll(() => starts(page)).toBeGreaterThan(0)
 })
