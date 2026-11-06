@@ -10,8 +10,23 @@ type EyeDropperInstance = {
 }
 type EyeDropperConstructor = new () => EyeDropperInstance
 
+/**
+ * Anything that picks a color: `useEyeDropper()`, `useLoupeEyeDropper()`
+ * from `react-eyedropper-picker/loupe`, or your own.
+ */
+export type EyeDropperLike = {
+  /** Resolves with the color. Rejects with `AbortError` when cancelled. */
+  open: () => Promise<{ sRGBHex: string }>
+  /** False hides the eye dropper button. */
+  isSupported: boolean
+}
+
 export type UseEyeDropperResult = {
-  /** Opens the native eye dropper. Rejects with AbortError when closed/cancelled. */
+  /**
+   * Opens the native eye dropper. Rejects with `AbortError` when
+   * closed/cancelled and `NotSupportedError` when the browser has no
+   * EyeDropper API.
+   */
   open: (options?: ColorSelectionOptions) => Promise<ColorSelectionResult>
   /** Aborts the currently open eye dropper, if any. */
   close: () => void
@@ -62,8 +77,9 @@ export const useEyeDropper = (): UseEyeDropperResult => {
     async (options: ColorSelectionOptions = {}) => {
       const Ctor = getEyeDropper()
       if (!Ctor) {
-        throw new Error(
-          'Unsupported browser: EyeDropper API not available. See https://developer.mozilla.org/en-US/docs/Web/API/EyeDropper_API'
+        throw new DOMException(
+          'The EyeDropper API is not available. See https://developer.mozilla.org/en-US/docs/Web/API/EyeDropper_API',
+          'NotSupportedError'
         )
       }
       close()

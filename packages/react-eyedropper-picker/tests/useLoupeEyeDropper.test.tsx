@@ -1,5 +1,6 @@
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { EyeDropperLike } from '../src'
 import {
   useLoupeEyeDropper,
   type UseLoupeEyeDropperOptions,
@@ -196,5 +197,14 @@ describe('useLoupeEyeDropper', () => {
       loupe: { magnification: 20, onMagnificationChange: onChange },
     })
     expect(label.textContent).toContain('20×')
+  })
+})
+
+describe('ColorPicker integration', () => {
+  it('fits the eyeDropper prop of ColorPicker', () => {
+    const { result } = render({ source: mockSource() })
+    // Compile-time check: the loupe hook result is an EyeDropperLike.
+    const dropper: EyeDropperLike = result.current
+    expect(dropper.isSupported).toBe(true)
   })
 })

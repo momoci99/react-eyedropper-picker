@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { hexToHsv, hsvToHex, normalizeHex, type HSV } from '../utils/color'
-import { useEyeDropper } from './useEyeDropper'
+import { useEyeDropper, type EyeDropperLike } from './useEyeDropper'
 
 export type UseColorPickerOptions = {
   /** Controlled value (hex). */
@@ -9,6 +9,12 @@ export type UseColorPickerOptions = {
   defaultValue?: string
   /** Called with normalized lowercase `#rrggbb`. */
   onChange?: (hex: string) => void
+  /**
+   * Eye dropper used by `pickFromScreen`. Default: the native EyeDropper
+   * (`useEyeDropper()`). Pass `useLoupeEyeDropper()` from
+   * `react-eyedropper-picker/loupe` to pick from an image in every browser.
+   */
+  eyeDropper?: EyeDropperLike
 }
 
 export type UseColorPickerResult = {
@@ -31,6 +37,7 @@ export const useColorPicker = ({
   value,
   defaultValue = FALLBACK,
   onChange,
+  eyeDropper,
 }: UseColorPickerOptions = {}): UseColorPickerResult => {
   const initial = normalizeHex(value ?? defaultValue) ?? FALLBACK
   const [hsv, setHsvState] = useState<HSV>(() => hexToHsv(initial)!)
@@ -60,7 +67,8 @@ export const useColorPicker = ({
     return true
   }, [])
 
-  const { open, isSupported } = useEyeDropper()
+  const native = useEyeDropper()
+  const { open, isSupported } = eyeDropper ?? native
 
   const pickFromScreen = useCallback(async () => {
     try {

@@ -339,6 +339,7 @@ const dropper = useLoupeEyeDropper({ source: imgRef, loupe: { sound: true } })
 
 - `eyeDropper`를 안 주면 기본 경로 `useEyeDropper()`(순정)를 쓴다.
 - `eyeDropper.isSupported`가 false면 스포이드 버튼을 숨긴다 (5장 폴백 UX).
+- 구현 (2026-11-06): 기본 경로에 구조 타입 `EyeDropperLike = { open(): Promise<{ sRGBHex }>, isSupported }`를 둔다. `useColorPicker({ eyeDropper })`도 같은 옵션을 받는다. 커스텀 `eyeDropper`일 때 버튼 이름은 "Pick a color"다 (화면 전체가 아니므로).
 
 ### 패키지 경로 분리
 
