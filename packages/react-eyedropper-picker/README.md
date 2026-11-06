@@ -3,6 +3,8 @@
 React color picker with built-in support for the native [EyeDropper API](https://developer.mozilla.org/en-US/docs/Web/API/EyeDropper_API).
 Zero runtime dependencies, fully typed, SSR-safe, keyboard accessible.
 
+**[Live demo →](https://momoci99.github.io/react-eyedropper-picker/)**
+
 ```bash
 npm install react-eyedropper-picker
 ```

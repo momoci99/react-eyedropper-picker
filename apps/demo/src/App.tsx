@@ -23,6 +23,15 @@ export const App = () => {
           React color picker. Native EyeDropper where the browser has it, a
           pixel-accurate loupe for images everywhere.
         </p>
+        <nav className="page-links" aria-label="Project">
+          <a href="https://github.com/momoci99/react-eyedropper-picker">
+            GitHub
+          </a>
+          <a href="https://www.npmjs.com/package/react-eyedropper-picker">
+            npm
+          </a>
+          <code>npm install react-eyedropper-picker</code>
+        </nav>
       </header>
 
       <LoupeDemo onPick={setColor} />

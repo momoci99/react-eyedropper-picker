@@ -11,6 +11,8 @@ const lib = (path: string) =>
   )
 
 export default defineConfig({
+  // GitHub Pages serves the demo under /<repo>/ (set by the Pages workflow).
+  base: process.env.DEMO_BASE ?? '/',
   plugins: [react()],
   resolve: {
     // Use library source directly for instant HMR during development.
