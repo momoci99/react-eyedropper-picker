@@ -3,6 +3,7 @@ import {
   clampMagnification,
   formatMagnification,
   keyMagnification,
+  magnificationDetent,
   pinchMagnification,
   resolveMagnificationConfig,
   stepMagnification,
@@ -226,5 +227,44 @@ describe('formatMagnification', () => {
     expect(formatMagnification(12.5)).toBe('12.5×')
     expect(formatMagnification(9.68)).toBe('9.7×')
     expect(formatMagnification(8.000001)).toBe('8×')
+  })
+})
+
+describe('magnificationDetent', () => {
+  it('crosses exactly one detent per continuous step', () => {
+    let value = continuous.min
+    let detent = magnificationDetent(value, continuous)
+    for (let i = 0; i < 40; i++) {
+      value = stepMagnification(value, 1, continuous)
+      const next = magnificationDetent(value, continuous)
+      expect(next).toBe(detent + 1)
+      detent = next
+    }
+  })
+
+  it('crosses one per step from any start, also zooming out', () => {
+    let value = 8
+    let detent = magnificationDetent(value, continuous)
+    for (let i = 0; i < 15; i++) {
+      value = stepMagnification(value, -1, continuous)
+      const next = magnificationDetent(value, continuous)
+      expect(next).toBe(detent - 1)
+      detent = next
+    }
+  })
+
+  it('does not change for small continuous moves within a detent', () => {
+    expect(magnificationDetent(8.01, continuous)).toBe(
+      magnificationDetent(8.05, continuous)
+    )
+  })
+
+  it('counts the steps at or below the value', () => {
+    expect(magnificationDetent(1, stepped)).toBe(0)
+    expect(magnificationDetent(2, stepped)).toBe(1)
+    expect(magnificationDetent(3, stepped)).toBe(1)
+    expect(magnificationDetent(8, stepped)).toBe(3)
+    expect(magnificationDetent(8 * (1 - 1e-12), stepped)).toBe(3)
+    expect(magnificationDetent(64, stepped)).toBe(5)
   })
 })

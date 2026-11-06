@@ -264,7 +264,7 @@ type LoupeSoundOptions = {
   volume?: number               // 0~1, 기본 0.5
   events?: Partial<Record<LoupeSoundEvent, boolean>>   // 이벤트별 on/off
   minTickInterval?: number      // ms, 기본 25. 이보다 빠른 틱은 합침
-  play?: Partial<Record<LoupeSoundEvent, (ctx: AudioContext, speed: number) => void>>  // 직접 만든 소리
+  play?: Partial<Record<LoupeSoundEvent, (ctx: AudioContext, speed: number, output: AudioNode) => void>>  // 직접 만든 소리. output에 연결해야 volume이 적용됨
 }
 
 type LoupeOptions = {
