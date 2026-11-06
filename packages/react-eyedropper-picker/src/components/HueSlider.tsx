@@ -9,7 +9,12 @@ export type HueSliderProps = {
   style?: CSSProperties
 }
 
-export const HueSlider = ({ hue, onChange, className, style }: HueSliderProps) => {
+export const HueSlider = ({
+  hue,
+  onChange,
+  className,
+  style,
+}: HueSliderProps) => {
   const drag = usePointerDrag<HTMLDivElement>(
     useCallback(({ x }) => onChange(x * 360), [onChange])
   )

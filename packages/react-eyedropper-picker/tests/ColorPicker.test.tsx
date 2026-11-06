@@ -20,16 +20,23 @@ describe('ColorPicker', () => {
   it('ignores invalid hex', () => {
     const onChange = vi.fn()
     render(<ColorPicker onChange={onChange} />)
-    fireEvent.change(screen.getByLabelText('Hex color'), { target: { value: '#zz' } })
+    fireEvent.change(screen.getByLabelText('Hex color'), {
+      target: { value: '#zz' },
+    })
     expect(onChange).not.toHaveBeenCalled()
   })
 
   it('changes hue with keyboard', () => {
     const onChange = vi.fn()
     render(<ColorPicker defaultValue="#ff0000" onChange={onChange} />)
-    fireEvent.keyDown(screen.getByRole('slider', { name: 'Hue' }), { key: 'End' })
+    fireEvent.keyDown(screen.getByRole('slider', { name: 'Hue' }), {
+      key: 'End',
+    })
     expect(onChange).toHaveBeenLastCalledWith('#ff0000')
-    fireEvent.keyDown(screen.getByRole('slider', { name: 'Hue' }), { key: 'ArrowRight', shiftKey: true })
+    fireEvent.keyDown(screen.getByRole('slider', { name: 'Hue' }), {
+      key: 'ArrowRight',
+      shiftKey: true,
+    })
   })
 
   it('hides eye dropper button when unsupported', () => {

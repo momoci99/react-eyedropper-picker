@@ -9,7 +9,8 @@
     "typecheck": "pnpm -r typecheck",
     "dev": "pnpm -C apps/demo dev",
     "build:demo": "pnpm build && pnpm -C apps/demo build",
-    "format": "prettier --write \"{packages,apps}/*/{src,tests}/**/*.{ts,tsx,css}\""
+    "format": "prettier --write \"{packages,apps}/*/{src,tests}/**/*.{ts,tsx,css}\"",
+    "format:check": "prettier --check \"{packages,apps}/*/{src,tests}/**/*.{ts,tsx,css}\""
   },
   "devDependencies": {
     "prettier": "^3.9.10",

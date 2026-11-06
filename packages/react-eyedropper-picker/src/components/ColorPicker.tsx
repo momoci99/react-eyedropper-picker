@@ -1,5 +1,8 @@
 import { useEffect, useState, type CSSProperties } from 'react'
-import { useColorPicker, type UseColorPickerOptions } from '../hooks/useColorPicker'
+import {
+  useColorPicker,
+  type UseColorPickerOptions,
+} from '../hooks/useColorPicker'
 import { SaturationPanel } from './SaturationPanel'
 import { HueSlider } from './HueSlider'
 import { EyeDropperButton } from './EyeDropperButton'
