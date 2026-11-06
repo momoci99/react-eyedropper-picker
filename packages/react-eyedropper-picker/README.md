@@ -98,6 +98,7 @@ function ImagePicker() {
 ```
 
 - Mouse: move to aim, click to pick, click outside the image to cancel, wheel to zoom.
+- Touch: the loupe sits above your finger. Drag to aim, lift to pick, tap outside to cancel, pinch to zoom.
 - Keyboard: arrows move 1px (Shift: 10px), Enter picks, Escape cancels, `+` / `-` zoom, `0` resets.
 - `mode`: `'auto'` (default) uses the loupe when there is a `source`, else the native EyeDropper. `'native'` and `'loupe'` force one.
 - `loupe` options: `defaultMagnification` (8), `minMagnification` (1), `maxMagnification` (64), `magnificationSteps`, controlled `magnification` + `onMagnificationChange`, `size` (120), `shape` (`'circle'` | `'square'`), `grid` (true), `sampleSize` (1 | 3 | 5), `className`.

@@ -60,18 +60,18 @@ export const mockFrames = () => {
   }
 }
 
-/** A 10x10 `<canvas>` source shown at 100x100 CSS px from (0, 0). */
-export const mockSource = () => {
+/** A 10x10 `<canvas>` source shown at `width` x `height` CSS px from (0, 0). */
+export const mockSource = (width = 100, height = 100) => {
   const source = document.createElement('canvas')
   source.width = 10
   source.height = 10
   vi.spyOn(source, 'getBoundingClientRect').mockReturnValue({
     left: 0,
     top: 0,
-    width: 100,
-    height: 100,
-    right: 100,
-    bottom: 100,
+    width,
+    height,
+    right: width,
+    bottom: height,
     x: 0,
     y: 0,
     toJSON: () => ({}),
@@ -106,4 +106,20 @@ export const key = (k: string, init: KeyboardEventInit = {}) =>
 export const wheel = (deltaY: number) =>
   getOverlay()!.dispatchEvent(
     new WheelEvent('wheel', { deltaY, bubbles: true, cancelable: true })
+  )
+
+export const touch = (
+  type: 'pointerdown' | 'pointermove' | 'pointerup' | 'pointercancel',
+  pointerId: number,
+  clientX: number,
+  clientY: number
+) =>
+  getOverlay()!.dispatchEvent(
+    new PointerEvent(type, {
+      pointerType: 'touch',
+      pointerId,
+      clientX,
+      clientY,
+      bubbles: true,
+    })
   )

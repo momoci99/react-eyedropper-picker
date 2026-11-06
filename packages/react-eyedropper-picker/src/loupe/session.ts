@@ -4,6 +4,7 @@ import {
   clampPixel,
   clientToSourcePixel,
   sourcePixelToClient,
+  touchLoupeCenter,
   type DisplayRect,
   type Point,
 } from './geometry'
@@ -11,6 +12,7 @@ import {
   clampMagnification,
   formatMagnification,
   keyMagnification,
+  pinchMagnification,
   wheelDeltaToNotches,
   wheelMagnification,
   type MagnificationConfig,
@@ -65,6 +67,10 @@ export type LoupeSession = {
 /** How long the `12.5×` badge stays after the last zoom change. */
 const ZOOM_BADGE_MS = 1000
 const LABEL_GAP = 8
+/** Space between a finger and the loupe edge; the label sits in it. */
+const TOUCH_GAP = 48
+/** A touch that moves less than this (CSS px) counts as a tap. */
+const TAP_SLOP = 10
 
 const ARROWS: Record<string, Point> = {
   ArrowLeft: { x: -1, y: 0 },
@@ -79,8 +85,10 @@ const abortError = () => new DOMException('The loupe was closed.', 'AbortError')
  * Opens the loupe over the page: a full-viewport overlay that blocks clicks
  * to the page, with the magnifier following the pointer over `source`.
  *
- * - Pointer: move to track, click on the source to confirm, click outside
- *   to cancel. Wheel zooms.
+ * - Mouse / pen: move to track, click on the source to confirm, click
+ *   outside to cancel. Wheel zooms.
+ * - Touch: the loupe sits above the finger. Drag to aim, lift to confirm,
+ *   tap outside to cancel. Pinch with two fingers zooms.
  * - Keys: arrows move 1px (Shift: 10px), Enter confirms, Escape cancels,
  *   `+` / `-` / `0` zoom.
  *
@@ -277,9 +285,86 @@ export const startLoupeSession = (
   const on = { signal: listeners.signal }
   const passive = { signal: listeners.signal, passive: true }
 
+  // ── Touch ──
+  // One finger: the loupe sits above it, drag to aim, lift to confirm.
+  // Two fingers: pinch zooms. A gesture that pinched never confirms.
+  const touches = new Map<number, Point>()
+  let pinch: { distance: number; magnification: number } | null = null
+  let pinched = false
+  let touchStart: Point | null = null
+  let touchMoved = false
+
+  const fingerDistance = () => {
+    const [a, b] = touches.values()
+    return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0
+  }
+
+  const aimTouch = (x: number, y: number) => {
+    pixel = pixelAt(x, y)
+    anchor = touchLoupeCenter(x, y, size, TOUCH_GAP)
+    aimed = true
+    schedule()
+  }
+
+  const onTouchDown = (e: PointerEvent) => {
+    touches.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    if (touches.size === 1) {
+      pinched = false
+      touchMoved = false
+      touchStart = { x: e.clientX, y: e.clientY }
+      aimTouch(e.clientX, e.clientY)
+    } else if (touches.size === 2) {
+      pinch = { distance: fingerDistance(), magnification }
+      pinched = true
+    }
+  }
+
+  const onTouchMove = (e: PointerEvent) => {
+    if (!touches.has(e.pointerId)) return
+    touches.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    if (pinch) {
+      zoomTo(
+        pinchMagnification(
+          pinch.magnification,
+          pinch.distance,
+          fingerDistance(),
+          config
+        )
+      )
+    } else if (!pinched) {
+      if (
+        touchStart &&
+        Math.hypot(e.clientX - touchStart.x, e.clientY - touchStart.y) >
+          TAP_SLOP
+      ) {
+        touchMoved = true
+      }
+      aimTouch(e.clientX, e.clientY)
+    }
+  }
+
+  const onTouchUp = (e: PointerEvent) => {
+    if (!touches.delete(e.pointerId)) return
+    if (touches.size < 2) pinch = null
+    if (touches.size > 0 || pinched || e.type === 'pointercancel') return
+    const p = pixelAt(e.clientX, e.clientY)
+    if (p) confirm(pixel ?? p)
+    // Tap outside cancels; a drag that ends outside keeps the loupe open.
+    else if (!touchMoved) cancel()
+  }
+
+  overlay.addEventListener(
+    'pointerdown',
+    (e) => {
+      if (e.pointerType === 'touch') onTouchDown(e)
+    },
+    passive
+  )
+
   overlay.addEventListener(
     'pointermove',
     (e) => {
+      if (e.pointerType === 'touch') return onTouchMove(e)
       anchor = { x: e.clientX, y: e.clientY }
       pixel = pixelAt(e.clientX, e.clientY)
       aimed = true
@@ -288,9 +373,31 @@ export const startLoupeSession = (
     passive
   )
 
+  for (const type of ['pointerup', 'pointercancel'] as const) {
+    overlay.addEventListener(
+      type,
+      (e) => {
+        if (e.pointerType === 'touch') onTouchUp(e)
+      },
+      passive
+    )
+  }
+
+  // Not passive: stops page scroll and pinch-zoom (iOS ignores some
+  // `touch-action`), and the click a browser makes after a touch, which
+  // would land on the page once the overlay is gone.
+  for (const type of ['touchstart', 'touchmove', 'touchend'] as const) {
+    overlay.addEventListener(type, (e) => e.preventDefault(), {
+      signal: listeners.signal,
+      passive: false,
+    })
+  }
+
   overlay.addEventListener(
     'click',
     (e) => {
+      // Touch is handled on pointerup. Some browsers still send a click.
+      if ((e as PointerEvent).pointerType === 'touch') return
       const p = pixelAt(e.clientX, e.clientY)
       if (!p) return cancel()
       // Confirm what the loupe shows. The click point can land on the next
