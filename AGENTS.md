@@ -31,7 +31,7 @@ Run `pnpm typecheck && pnpm test` before considering a change done.
 
 - Prettier: no semicolons, single quotes, trailing commas (es5).
 - `react` is a peer dependency (`>=19.2`). Latest React APIs (`useEffectEvent`, `useId`, `<Activity>`, `useTransition`, ...) are allowed. Keep the library free of runtime dependencies.
-- Use the latest versions of dev dependencies and tools. Check with `pnpm -r outdated`; upgrade with `pnpm -r update --latest`, then run typecheck, test and `pnpm build:demo`.
+- Use the latest versions of dev dependencies and tools. Check with `pnpm -r outdated`; upgrade with `pnpm -r update --latest`, then run typecheck, test and `pnpm build:demo`. Exception: `@types/node` stays on the Node major in `.nvmrc` (24), so `outdated` listing a newer major is expected.
 - Keep pnpm's default `minimumReleaseAge` (versions published < 24h ago are rejected). "Latest" means the newest version that passes it. Don't disable or exclude around it.
 - pnpm version is pinned by `packageManager` in the root `package.json`; CI reads it from there.
 - Declare every package you import (e.g. `@types/node` for `node:*` in config files). Don't rely on hoisting.
