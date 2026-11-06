@@ -15,6 +15,7 @@ export {
   useEyeDropper,
   isEyeDropperSupported,
   type UseEyeDropperResult,
+  type EyeDropperLike,
   type ColorSelectionOptions,
   type ColorSelectionResult,
 } from './hooks/useEyeDropper'

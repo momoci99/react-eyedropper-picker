@@ -6,7 +6,10 @@ import { EyeDropperButton } from './EyeDropperButton'
 import { normalizeHex } from '../utils/color'
 
 export type ColorPickerProps = UseColorPickerOptions & {
-  /** Show the eye dropper button when the browser supports it. Default true. */
+  /**
+   * Show the eye dropper button when `eyeDropper.isSupported` (by default:
+   * when the browser has the native EyeDropper API). Default true.
+   */
   showEyeDropper?: boolean
   /** Show the hex text input. Default true. */
   showInput?: boolean
@@ -87,7 +90,14 @@ export const ColorPicker = ({
           />
         )}
         {showEyeDropper && isEyeDropperSupported && (
-          <EyeDropperButton onClick={() => void pickFromScreen()} />
+          <EyeDropperButton
+            onClick={() => void pickFromScreen()}
+            // A custom eye dropper (e.g. the loupe) may not pick from the screen.
+            {...(options.eyeDropper && {
+              'aria-label': 'Pick a color',
+              title: 'Pick a color',
+            })}
+          />
         )}
       </div>
     </div>

@@ -18,7 +18,9 @@ describe('useEyeDropper', () => {
   it('reports unsupported and rejects open', async () => {
     const { result } = renderHook(() => useEyeDropper())
     expect(result.current.isSupported).toBe(false)
-    await expect(result.current.open()).rejects.toThrow(/Unsupported/)
+    await expect(result.current.open()).rejects.toMatchObject({
+      name: 'NotSupportedError',
+    })
   })
 
   it('opens and resolves color', async () => {

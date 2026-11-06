@@ -27,6 +27,7 @@ function App() {
 | `defaultValue`   | `string`                | `'#000000'` | Initial value when uncontrolled               |
 | `onChange`       | `(hex: string) => void` | –           | Called with normalized `#rrggbb`              |
 | `showEyeDropper` | `boolean`               | `true`      | Show eye dropper button (when supported)      |
+| `eyeDropper`     | `EyeDropperLike`        | native      | Picker behind the button (see Loupe)          |
 | `showInput`      | `boolean`               | `true`      | Show hex input                                |
 | `className`      | `string`                | –           | Root class name                               |
 | `style`          | `CSSProperties`         | –           | Root inline style (merged with defaults)      |
@@ -61,6 +62,8 @@ import { useEyeDropper } from 'react-eyedropper-picker'
 const { open, close, isSupported } = useEyeDropper()
 const { sRGBHex } = await open() // rejects with AbortError on cancel/close
 ```
+
+`open()` rejects with `NotSupportedError` where the browser has no EyeDropper API. Check `isSupported` first.
 
 ### Loupe: pick from an image or canvas
 
@@ -136,13 +139,27 @@ function ImagePicker() {
 - Cross-origin images need CORS (`crossOrigin="anonymous"`), or `open()` rejects with `SecurityError`.
 - Focus returns to the element that was focused before `open()`. Don't disable that button while `isOpen`, or focus is lost (a disabled button can't take focus back).
 
+#### With `ColorPicker`
+
+Pass the hook to `eyeDropper`. The eye dropper button then opens the loupe on your image, so it shows in every browser, not only where the native EyeDropper exists. `ColorPicker` only needs `{ open, isSupported }`, so the base entry still doesn't bundle the loupe.
+
+```tsx
+const img = useRef<HTMLImageElement>(null)
+const dropper = useLoupeEyeDropper({ source: img })
+
+<img ref={img} src="/photo.jpg" alt="" />
+<ColorPicker value={color} onChange={setColor} eyeDropper={dropper} />
+```
+
+`useColorPicker({ eyeDropper })` does the same for headless pickers.
+
 ### Color utilities
 
 `normalizeHex`, `isValidHex`, `hexToRgb`, `rgbToHex`, `rgbToHsv`, `hsvToRgb`, `hexToHsv`, `hsvToHex`.
 
 ## Browser support
 
-The picker works everywhere. The eye dropper button only appears where the EyeDropper API exists (Chromium-based browsers: Chrome, Edge, Opera).
+The picker works everywhere. By default the eye dropper button only appears where the EyeDropper API exists (Chromium-based browsers: Chrome, Edge, Opera). With a loupe `eyeDropper` it appears in every browser.
 
 ## Credits
 

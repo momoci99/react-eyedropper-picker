@@ -37,6 +37,42 @@ describe('ColorPicker', () => {
     expect(screen.queryByLabelText('Pick color from screen')).toBeNull()
   })
 
+  it('uses a custom eye dropper without native support', async () => {
+    const eyeDropper = {
+      open: vi.fn(async () => ({ sRGBHex: '#123456', x: 1, y: 2 })),
+      isSupported: true,
+    }
+    const onChange = vi.fn()
+    render(<ColorPicker onChange={onChange} eyeDropper={eyeDropper} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Pick a color' }))
+    await vi.waitFor(() => expect(onChange).toHaveBeenCalledWith('#123456'))
+    expect(eyeDropper.open).toHaveBeenCalledOnce()
+  })
+
+  it('hides the button when the custom eye dropper is unsupported', () => {
+    ;(window as any).EyeDropper = class {
+      open = async () => ({ sRGBHex: '#abcdef' })
+    }
+    const eyeDropper = { open: vi.fn(), isSupported: false }
+    render(<ColorPicker eyeDropper={eyeDropper} />)
+    expect(screen.queryByRole('button')).toBeNull()
+  })
+
+  it('ignores a cancelled custom eye dropper', async () => {
+    const eyeDropper = {
+      open: vi.fn(async () => {
+        throw new DOMException('closed', 'AbortError')
+      }),
+      isSupported: true,
+    }
+    const onChange = vi.fn()
+    render(<ColorPicker onChange={onChange} eyeDropper={eyeDropper} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Pick a color' }))
+    await vi.waitFor(() => expect(eyeDropper.open).toHaveBeenCalled())
+    await new Promise((r) => setTimeout(r, 0))
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
   it('picks color from screen', async () => {
     ;(window as any).EyeDropper = class {
       open = async () => ({ sRGBHex: '#abcdef' })
