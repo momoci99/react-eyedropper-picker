@@ -57,3 +57,34 @@ jobs:
             console.log(files.join("\n"))
           '
           rm pack.json
+
+  # Playwright checks against the demo in real Chromium (desktop mouse + mobile touch).
+  # Runs the demo dev server itself; it uses library source, so no build needed.
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Headless shell is enough (tests run headless); --with-deps adds OS libraries.
+      - name: Install Chromium
+        run: pnpm e2e:install --with-deps --only-shell
+
+      - name: E2E
+        run: pnpm e2e
+
+      # Screenshots and traces of failed tests (open a trace with `npx playwright show-trace`).
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: e2e-results
+          path: apps/demo/test-results
+          retention-days: 7
