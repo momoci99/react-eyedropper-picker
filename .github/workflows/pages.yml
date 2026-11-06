@@ -1,0 +1,57 @@
+name: Pages
+
+# Builds the demo and publishes it to GitHub Pages:
+# https://momoci99.github.io/react-eyedropper-picker/
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# One deploy at a time; let a running deploy finish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # pnpm version comes from packageManager in package.json
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build library and demo
+        run: pnpm build:demo
+        env:
+          # Pages serves the site under /<repo>/
+          DEMO_BASE: /${{ github.event.repository.name }}/
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: apps/demo/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

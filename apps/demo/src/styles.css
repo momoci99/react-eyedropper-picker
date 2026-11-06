@@ -65,6 +65,32 @@ p {
   letter-spacing: -0.02em;
 }
 
+.page-header {
+  display: grid;
+  gap: 6px;
+}
+
+.page-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  font-size: 14px;
+}
+
+.page-links a {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.page-links code {
+  font-size: 13px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--control);
+  border: 1px solid var(--border);
+}
+
 .muted {
   color: var(--muted);
 }
