@@ -74,7 +74,8 @@ export const loupeDemo = (page: Page) => {
     zoom: card
       .locator('legend', { hasText: 'Magnification' })
       .locator('output'),
-    sound: card.getByRole('checkbox', { name: /Ticks, zoom detents/ }),
+    sound: card.getByRole('checkbox', { name: /Sound on/ }),
+    soundEvent: (name: RegExp) => card.getByRole('checkbox', { name }),
     mode: (name: RegExp) =>
       card
         .getByRole('radiogroup', { name: 'Mode' })

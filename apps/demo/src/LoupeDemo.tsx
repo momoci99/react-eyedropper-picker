@@ -4,6 +4,7 @@ import {
   useLoupeEyeDropper,
   type LoupePickResult,
   type LoupeShape,
+  type LoupeSoundEvent,
   type PickResult,
   type SampleSize,
 } from 'react-eyedropper-picker/loupe'
@@ -28,6 +29,22 @@ const SIZES = [80, 120, 160, 200]
 const SAMPLE_SIZES: SampleSize[] = [1, 3, 5]
 const SHAPES: LoupeShape[] = ['circle', 'square']
 const MAX_MAGNIFICATION = 64
+
+/** Demo sound switches, each mapped to `sound.events`. */
+const SOUND_GROUPS = [
+  { id: 'pixel', label: 'Pixel ticks', events: ['pixel'] },
+  { id: 'zoom', label: 'Zoom ticks', events: ['zoom'] },
+  {
+    id: 'ui',
+    label: 'Open, confirm, cancel',
+    events: ['open', 'confirm', 'cancel'],
+  },
+] as const satisfies readonly {
+  id: string
+  label: string
+  events: readonly LoupeSoundEvent[]
+}[]
+type SoundGroup = (typeof SOUND_GROUPS)[number]['id']
 const HISTORY_LIMIT = 10
 
 // The slider is logarithmic: equal moves feel like equal zoom steps.
@@ -77,7 +94,15 @@ export const LoupeDemo = ({ onPick }: Props) => {
   // The library default is off; the demo shows the effects on.
   const [sound, setSound] = useState(true)
   const [volume, setVolume] = useState(0.5)
+  const [soundGroups, setSoundGroups] = useState<Record<SoundGroup, boolean>>({
+    pixel: true,
+    zoom: true,
+    ui: true,
+  })
   const [haptics, setHaptics] = useState(true)
+  // Library default is 0 (no glide); the demo shows a little.
+  const [smoothing, setSmoothing] = useState(0.4)
+  const [animate, setAnimate] = useState(true)
   const [history, setHistory] = useState<PickResult[]>([])
   const [error, setError] = useState<string | null>(null)
 
@@ -92,8 +117,15 @@ export const LoupeDemo = ({ onPick }: Props) => {
     shape,
     size,
     grid,
-    sound: sound && { volume },
+    sound: sound && {
+      volume,
+      events: Object.fromEntries(
+        SOUND_GROUPS.flatMap((g) => g.events.map((e) => [e, soundGroups[g.id]]))
+      ),
+    },
     haptics,
+    smoothing,
+    animate,
   }
   const { open, isOpen } = useLoupeEyeDropper({ source: imageRef, loupe })
 
@@ -354,6 +386,36 @@ export const LoupeDemo = ({ onPick }: Props) => {
 
           <fieldset>
             <legend>
+              Motion{' '}
+              <output>{smoothing ? `glide ${smoothing}` : 'no glide'}</output>
+            </legend>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.1}
+              value={smoothing}
+              onChange={(e) => setSmoothing(Number(e.target.value))}
+              aria-label="Smoothing"
+              aria-valuetext={String(smoothing)}
+            />
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={animate}
+                onChange={(e) => setAnimate(e.target.checked)}
+              />
+              <span>
+                Grow in, shrink out, animated zoom (<code>animate</code>)
+              </span>
+            </label>
+            <p className="muted small">
+              Both are off when your system asks for reduced motion.
+            </p>
+          </fieldset>
+
+          <fieldset>
+            <legend>
               Sound{' '}
               <output>{sound ? `${Math.round(volume * 100)}%` : 'off'}</output>
             </legend>
@@ -364,10 +426,27 @@ export const LoupeDemo = ({ onPick }: Props) => {
                 onChange={(e) => setSound(e.target.checked)}
               />
               <span>
-                Ticks, zoom detents, open / confirm / cancel (<code>sound</code>
-                )
+                Sound on (<code>sound</code>)
               </span>
             </label>
+            {SOUND_GROUPS.map((g) => (
+              <label key={g.id} className="check sub">
+                <input
+                  type="checkbox"
+                  checked={soundGroups[g.id]}
+                  disabled={!sound}
+                  onChange={(e) =>
+                    setSoundGroups((prev) => ({
+                      ...prev,
+                      [g.id]: e.target.checked,
+                    }))
+                  }
+                />
+                <span>
+                  {g.label} (<code>{g.events.join(' / ')}</code>)
+                </span>
+              </label>
+            ))}
             <input
               type="range"
               min={0}

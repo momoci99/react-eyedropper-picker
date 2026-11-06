@@ -137,3 +137,64 @@ export const fakeFeedback = (): {
   cancel: vi.fn(),
   destroy: vi.fn(),
 })
+
+/** Label under a loupe element (element > inner > canvas + label). */
+export const loupeLabel = (loupe: Element) =>
+  loupe.firstElementChild!.lastElementChild as HTMLElement
+
+/** `matchMedia` answering `prefers-reduced-motion`; change `.matches` later. */
+export const mockReducedMotion = (matches: boolean) => {
+  const query = { matches }
+  Object.defineProperty(window, 'matchMedia', {
+    value: (q: string) =>
+      q.includes('prefers-reduced-motion') ? query : { matches: false },
+    configurable: true,
+  })
+  return query
+}
+
+export const resetReducedMotion = () => {
+  delete (window as unknown as Record<string, unknown>).matchMedia
+}
+
+type FakeAnimation = {
+  keyframes: Keyframe[]
+  onfinish: (() => void) | null
+  cancel: Mock<() => void>
+  /** Ends the animation, as the browser would. */
+  finish: () => void
+}
+
+/** jsdom has no Web Animations: records `animate()` calls. */
+export const mockAnimate = () => {
+  const animations: FakeAnimation[] = []
+  Object.defineProperty(HTMLElement.prototype, 'animate', {
+    value: function (keyframes: Keyframe[]) {
+      const a: FakeAnimation = {
+        keyframes,
+        onfinish: null,
+        cancel: vi.fn(),
+        finish: () => a.onfinish?.(),
+      }
+      animations.push(a)
+      return a
+    },
+    configurable: true,
+  })
+  return animations
+}
+
+export const resetAnimate = () => {
+  delete (HTMLElement.prototype as unknown as Record<string, unknown>).animate
+}
+
+/** Controls `performance.now()`; `advance(ms)` moves it. */
+export const mockNow = () => {
+  let now = 1000
+  vi.spyOn(performance, 'now').mockImplementation(() => now)
+  return {
+    advance: (ms: number) => {
+      now += ms
+    },
+  }
+}

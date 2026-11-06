@@ -18,6 +18,12 @@ import {
   pointer,
   touch,
   wheel,
+  loupeLabel,
+  mockAnimate,
+  mockNow,
+  mockReducedMotion,
+  resetAnimate,
+  resetReducedMotion,
 } from './loupe-mocks'
 
 let frames: ReturnType<typeof mockFrames>
@@ -55,7 +61,7 @@ const start = (overrides: Partial<LoupeSessionOptions> = {}) => {
 }
 
 const loupeElement = () => getOverlay()!.firstElementChild as HTMLElement
-const labelText = () => loupeElement().lastElementChild!.textContent
+const labelText = () => loupeLabel(loupeElement()).textContent
 
 describe('startLoupeSession', () => {
   it('opens a focused overlay', () => {
@@ -183,7 +189,7 @@ describe('startLoupeSession', () => {
     try {
       start()
       wheel(-100)
-      const badge = loupeElement().lastElementChild!.lastElementChild!
+      const badge = loupeLabel(loupeElement()).lastElementChild!
       expect((badge as HTMLElement).hidden).toBe(false)
       vi.advanceTimersByTime(1000)
       expect((badge as HTMLElement).hidden).toBe(true)
@@ -434,5 +440,100 @@ describe('startLoupeSession feedback', () => {
     pointer('pointerdown', 30, 30)
     key('ArrowLeft')
     expect(feedback.unlock).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('startLoupeSession motion', () => {
+  afterEach(() => {
+    resetAnimate()
+    resetReducedMotion()
+  })
+
+  const transform = () => loupeElement().style.transform
+  /** Loupe transform centered on client (35, 45). */
+  const AT_POINTER = 'translate(-25px, -15px)'
+  const raf = () => vi.mocked(window.requestAnimationFrame).mock.calls.length
+
+  /** Runs frames 16ms apart until nothing is scheduled (max 200). */
+  const settle = (clock: ReturnType<typeof mockNow>) => {
+    for (let i = 0; i < 200; i++) {
+      const before = raf()
+      clock.advance(16)
+      frames.flush()
+      if (raf() === before) return
+    }
+  }
+
+  it('glides after the pointer with smoothing, the pixel is exact at once', () => {
+    const clock = mockNow()
+    start({ smoothing: 1 })
+    frames.flush()
+    pointer('pointermove', 35, 45)
+    frames.flush()
+    expect(transform()).not.toBe(AT_POINTER)
+    expect(labelText()).toBe(gridHex(3, 4))
+    settle(clock)
+    expect(transform()).toBe(AT_POINTER)
+    // Settled: no frame left.
+    const before = raf()
+    frames.flush()
+    expect(raf()).toBe(before)
+  })
+
+  it('ignores smoothing when the user prefers reduced motion', () => {
+    mockReducedMotion(true)
+    start({ smoothing: 1 })
+    frames.flush()
+    pointer('pointermove', 35, 45)
+    frames.flush()
+    expect(transform()).toBe(AT_POINTER)
+  })
+
+  it('keeps drawing after a zoom until it settles', () => {
+    const clock = mockNow()
+    start()
+    frames.flush()
+    wheel(-500)
+    frames.flush()
+    const before = raf()
+    clock.advance(16)
+    frames.flush()
+    // Still zooming: the frame scheduled another one.
+    expect(raf()).toBe(before + 1)
+    settle(clock)
+    const after = raf()
+    frames.flush()
+    expect(raf()).toBe(after)
+  })
+
+  it('grows in on open and shrinks out after confirm', async () => {
+    const animations = mockAnimate()
+    const s = start()
+    expect(animations).toHaveLength(1)
+    const loupe = loupeElement()
+    key('Enter')
+    await s.result
+    // The page is free at once; the loupe finishes shrinking on its own.
+    expect(getOverlay()).toBeNull()
+    expect(animations).toHaveLength(2)
+    expect(loupe.parentNode).toBe(document.body)
+    animations[1]!.finish()
+    expect(loupe).not.toBeInTheDocument()
+  })
+
+  it('does not animate with animate: false or reduced motion', async () => {
+    const animations = mockAnimate()
+    const a = start({ animate: false })
+    const first = loupeElement()
+    key('Enter')
+    await a.result
+    mockReducedMotion(true)
+    const b = start()
+    const second = loupeElement()
+    key('Enter')
+    await b.result
+    expect(animations).toHaveLength(0)
+    expect(first).not.toBeInTheDocument()
+    expect(second).not.toBeInTheDocument()
   })
 })

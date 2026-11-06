@@ -137,7 +137,7 @@ function ImagePicker() {
 - Touch: the loupe sits above your finger. Drag to aim, lift to pick, tap outside to cancel, pinch to zoom.
 - Keyboard: arrows move 1px (Shift: 10px), Enter picks, Escape cancels, `+` / `-` zoom, `0` resets.
 - `mode`: `'auto'` (default) uses the loupe when there is a `source`, else the native EyeDropper. `'native'` and `'loupe'` force one.
-- `loupe` options: `defaultMagnification` (8), `minMagnification` (1), `maxMagnification` (64), `magnificationSteps`, controlled `magnification` + `onMagnificationChange`, `size` (120), `shape` (`'circle'` | `'square'`), `grid` (true), `sampleSize` (1 | 3 | 5), `className`.
+- `loupe` options: `defaultMagnification` (8), `minMagnification` (1), `maxMagnification` (64), `magnificationSteps`, controlled `magnification` + `onMagnificationChange`, `size` (120), `shape` (`'circle'` | `'square'`), `grid` (true), `sampleSize` (1 | 3 | 5), `className`, `smoothing` (0), `animate` (true), `sound` (false), `haptics` (false).
 - Cross-origin images need CORS (`crossOrigin="anonymous"`), or `open()` rejects with `SecurityError`.
 - Focus returns to the element that was focused before `open()`. Don't disable that button while `isOpen`, or focus is lost (a disabled button can't take focus back).
 
@@ -155,6 +155,12 @@ const dropper = useLoupeEyeDropper({ source: img })
 
 `useColorPicker({ eyeDropper })` does the same for headless pickers.
 
+#### Motion
+
+- `smoothing` (0 to 1, default 0): the loupe glides after the pointer instead of jumping. The picked pixel is always the one under the pointer; only the loupe's position lags.
+- `animate` (default true): the loupe grows in when it appears, shrinks out when it closes, and zooms smoothly.
+- Both turn off when the user prefers reduced motion (`prefers-reduced-motion: reduce`).
+
 #### Sound and haptics
 
 The loupe can tick like a mechanical dial as it moves: one tick per source pixel, a "brrrt" when you sweep fast, a detent tick per zoom step, a "whoosh" on open, a click on confirm, a low tone on cancel. Both are **off by default**: turn them on with one option, on `ImageColorPicker` or `useLoupeEyeDropper`.
@@ -168,7 +174,7 @@ useLoupeEyeDropper({
     sound: {
       volume: 0.3, // 0 to 1, default 0.5
       events: { cancel: false }, // pixel, zoom, open, confirm, cancel
-      minTickInterval: 40, // ms, ticks closer than this merge. Default 25
+      minTickInterval: 50, // ms, ticks closer than this merge. Default 35
     },
   },
 })

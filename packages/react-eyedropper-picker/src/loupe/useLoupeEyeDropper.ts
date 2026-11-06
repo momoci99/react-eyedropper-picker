@@ -51,6 +51,16 @@ export type LoupeOptions = MagnificationOptions & {
   /** Added to the loupe element (canvas + label). */
   className?: string
   /**
+   * 0 to 1: how much the loupe glides after the pointer. Default 0 (none).
+   * The picked pixel is always the one under the pointer.
+   */
+  smoothing?: number
+  /**
+   * Grow in on open, shrink out on close, animated zoom. Default true.
+   * Off when the user prefers reduced motion, as is `smoothing`.
+   */
+  animate?: boolean
+  /**
    * Sounds made with Web Audio: a tick per pixel (a "brrrt" when moving
    * fast), a detent tick per zoom step, open, confirm and cancel.
    * Default false. `true` or options turn it on.
@@ -200,6 +210,8 @@ export const useLoupeEyeDropper = (
           grid: loupe.grid ?? true,
           sampleSize: loupe.sampleSize ?? 1,
           className: loupe.className,
+          smoothing: loupe.smoothing,
+          animate: loupe.animate,
           feedback,
           signal: openOptions.signal,
         })

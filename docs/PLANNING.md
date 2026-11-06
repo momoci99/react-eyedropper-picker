@@ -216,7 +216,7 @@ flowchart TD
 | 확정 | 또렷한 "딸깍" | 색 확정 시 |
 | 취소 | 낮은 톤 | Esc, 대상 밖 클릭 |
 
-- **드르륵 질감**: 틱 사이 최소 간격(기본 25ms)보다 빠르면 합쳐서 한 번만 낸다. 이동 속도에 따라 음량과 음높이를 조금 올리고, 틱마다 음높이를 ±5% 흔들어 단조로움을 없앤다.
+- **드르륵 질감**: 틱 사이 최소 간격(기본 35ms)보다 빠르면 합쳐서 한 번만 낸다. 천천히 움직이면 또렷한 딸깍, 빠르게 훑으면 음량을 줄이고 음높이를 살짝 올려 거슬리지 않는 "드르륵"이 되게 하고, 틱마다 음높이를 ±5% 흔들어 단조로움을 없앤다.
 - **구현**: Web Audio API로 소리를 합성한다. 오디오 파일이 없으니 번들이 작고 네트워크 요청도 없다.
 - **자동재생 정책**: `AudioContext`는 `open()`(사용자 동작) 안에서 만들거나 `resume()`한다.
 - **커스텀**: 음량, 이벤트별 on/off, 이벤트별 재생 함수 주입(직접 만든 소리나 `AudioBuffer` 사용) 지원.
@@ -263,7 +263,7 @@ type LoupeSoundEvent = 'pixel' | 'zoom' | 'open' | 'confirm' | 'cancel'
 type LoupeSoundOptions = {
   volume?: number               // 0~1, 기본 0.5
   events?: Partial<Record<LoupeSoundEvent, boolean>>   // 이벤트별 on/off
-  minTickInterval?: number      // ms, 기본 25. 이보다 빠른 틱은 합침
+  minTickInterval?: number      // ms, 기본 35. 이보다 빠른 틱은 합침
   play?: Partial<Record<LoupeSoundEvent, (ctx: AudioContext, speed: number, output: AudioNode) => void>>  // 직접 만든 소리. output에 연결해야 volume이 적용됨
 }
 
@@ -285,6 +285,7 @@ type LoupeOptions = {
 
   // 효과와 감성 (v0.3)
   smoothing?: number            // 0~1 추적 보간, 0이면 즉시
+  animate?: boolean             // 기본 true. 등장/퇴장, 배율 전환 애니메이션
   sound?: boolean | LoupeSoundOptions   // 기본 false
   haptics?: boolean             // 기본 false
 }
@@ -364,7 +365,7 @@ react-eyedropper-picker/loupe    # Loupe 엔진, useLoupeEyeDropper, ImageColorP
 | 터치 | 손가락이 대상을 가림 | 확대경 오프셋, 확정 방식(손 뗄 때) 명시 |
 | 사운드 거부감 | 앱에서 갑자기 소리가 나면 사용자가 불쾌해함 | 기본 꺼짐, 음량 옵션, 이벤트별 끄기, 탭 숨김 시 정지 |
 | 자동재생 정책 | 사용자 동작 없이 만든 `AudioContext`는 소리가 안 남 | `open()`(사용자 동작) 안에서 생성/resume |
-| 틱 과다 | 빠르게 훑으면 틱이 수백 번 겹쳐 시끄러움 | 최소 간격(25ms) 안의 틱은 합침, 동시 재생 수 제한 |
+| 틱 과다 | 빠르게 훑으면 틱이 수백 번 겹쳐 시끄러움 | 최소 간격(35ms) 안의 틱은 합침, 빠를수록 작게, 동시 재생 수 제한 |
 | 자유 배율 | 소수 배율에서 칸 크기가 들쭉날쭉해 그리드가 어긋날 수 있음 | 칸 경계를 반올림 계산으로 고정, 중앙 픽셀은 항상 정중앙 |
 
 ## 9. 로드맵
