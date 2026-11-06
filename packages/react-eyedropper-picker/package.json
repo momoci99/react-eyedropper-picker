@@ -1,7 +1,14 @@
 {
   "name": "react-eyedropper-picker",
-  "version": "0.1.0",
-  "description": "React color picker with native EyeDropper API support",
+  "version": "0.2.0",
+  "description": "React color picker with native EyeDropper support and a pixel-accurate loupe for picking colors from images in every browser",
+  "homepage": "https://momoci99.github.io/react-eyedropper-picker/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/momoci99/react-eyedropper-picker.git",
+    "directory": "packages/react-eyedropper-picker"
+  },
+  "bugs": "https://github.com/momoci99/react-eyedropper-picker/issues",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -29,6 +36,13 @@
     },
     "./package.json": "./package.json"
   },
+  "typesVersions": {
+    "*": {
+      "loupe": [
+        "./dist/loupe.d.ts"
+      ]
+    }
+  },
   "files": [
     "dist",
     "README.md",
@@ -51,7 +65,12 @@
     "eye-dropper",
     "color",
     "picker",
-    "hook"
+    "hook",
+    "loupe",
+    "magnifier",
+    "image-color-picker",
+    "pick-color-from-image",
+    "pixel"
   ],
   "author": "momoci99",
   "license": "MIT",
