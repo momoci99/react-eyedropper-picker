@@ -10,6 +10,7 @@ import {
   type RefCallback,
 } from 'react'
 import { createPortal } from 'react-dom'
+import { createLoupeFeedback, type LoupeFeedback } from './feedback'
 import { attachLoupeHover, type LoupeHover } from './hover'
 import { clampMagnification, resolveMagnificationConfig } from './magnification'
 import { readPixels, type PixelBuffer } from './pixels'
@@ -18,6 +19,7 @@ import {
   type LoupePickResult,
   type LoupeSession,
 } from './session'
+import type { LoupeSoundEvent, LoupeSoundOptions } from './sound'
 import type { LoupeOptions } from './useLoupeEyeDropper'
 import { DEFAULT_LOUPE_SIZE } from './view'
 
@@ -43,6 +45,42 @@ export type ImageColorPickerProps = Omit<ComponentProps<'img'>, 'children'> & {
 
 const isAbortError = (e: unknown) =>
   e instanceof DOMException && e.name === 'AbortError'
+
+type Effects = Pick<LoupeOptions, 'sound' | 'haptics'>
+
+/**
+ * Settings that need a new feedback engine. Custom players are left out
+ * (only which events have one counts), so inline functions and objects
+ * don't rebuild it every render.
+ */
+const effectsKey = ({ sound, haptics }: Effects) =>
+  JSON.stringify([
+    typeof sound === 'object'
+      ? {
+          ...sound,
+          play: Object.keys(sound.play ?? {}).filter(
+            (e) => sound.play?.[e as LoupeSoundEvent]
+          ),
+        }
+      : !!sound,
+    !!haptics,
+  ])
+
+/** Custom players that call the latest ones from `get()`. */
+const latestPlayers = (
+  sound: Effects['sound'],
+  get: () => Effects['sound']
+): Effects['sound'] => {
+  if (typeof sound !== 'object' || !sound.play) return sound
+  const play: LoupeSoundOptions['play'] = {}
+  for (const e of Object.keys(sound.play) as LoupeSoundEvent[]) {
+    play[e] = (ctx, speed, output) => {
+      const latest = get()
+      if (typeof latest === 'object') latest.play?.[e]?.(ctx, speed, output)
+    }
+  }
+  return { ...sound, play }
+}
 
 /**
  * An `<img>` you pick colors from.
@@ -71,6 +109,19 @@ export const ImageColorPicker = ({
   /** Uncontrolled magnification, shared by hover and keyboard loupe. */
   const zoom = useRef<number | null>(null)
   const [loads, setLoads] = useState(0)
+  /** Sound and haptics, rebuilt only when their settings change. */
+  const feedback = useRef<LoupeFeedback | null>(null)
+  const effects = useRef<Effects>(loupe)
+  // Stable, so hover and keyboard loupes don't rebuild with the settings.
+  const [forward] = useState<LoupeFeedback>(() => ({
+    unlock: () => feedback.current?.unlock(),
+    pixel: () => feedback.current?.pixel(),
+    zoom: () => feedback.current?.zoom(),
+    open: () => feedback.current?.open(),
+    confirm: () => feedback.current?.confirm(),
+    cancel: () => feedback.current?.cancel(),
+    destroy: () => {},
+  }))
   const [aim, setAim] = useState<{
     color: LoupePickResult
     container: HTMLElement
@@ -104,6 +155,25 @@ export const ImageColorPicker = ({
   const controlled = magnification !== undefined
   const hasLabel = renderLabel !== undefined
   const { src } = imgProps
+  const fxKey = effectsKey(loupe)
+
+  // Players are called from animation frames, so they're read from a ref.
+  useEffect(() => {
+    effects.current = loupe
+  })
+
+  useEffect(() => {
+    const { sound, haptics } = effects.current
+    const f = createLoupeFeedback(imgRef.current?.ownerDocument ?? document, {
+      sound: latestPlayers(sound, () => effects.current.sound),
+      haptics,
+    })
+    feedback.current = f
+    return () => {
+      f?.destroy()
+      if (feedback.current === f) feedback.current = null
+    }
+  }, [fxKey])
 
   const setImg = useCallback<RefCallback<HTMLImageElement>>(
     (node) => {
@@ -173,6 +243,7 @@ export const ImageColorPicker = ({
       sampleSize,
       className,
       label,
+      feedback: forward,
       onAim: label
         ? (color: LoupePickResult) => handleAim(color, label)
         : undefined,

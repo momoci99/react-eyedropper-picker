@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { attachLoupeHover, type LoupeHoverOptions } from '../src/loupe/hover'
 import { resolveMagnificationConfig } from '../src/loupe/magnification'
 import {
+  fakeFeedback,
   gridBuffer,
   gridHex,
   mockCanvas,
@@ -237,5 +238,52 @@ describe('attachLoupeHover', () => {
       source.dispatchEvent(e)
       expect(e.defaultPrevented).toBe(true)
     })
+  })
+})
+
+describe('attachLoupeHover feedback', () => {
+  it('ticks on pixel changes, not when the loupe appears', () => {
+    const feedback = fakeFeedback()
+    attach({ feedback })
+    hoverAt(35, 45)
+    frames.flush()
+    expect(feedback.pixel).not.toHaveBeenCalled()
+    send('pointermove', 45, 45)
+    frames.flush()
+    expect(feedback.pixel).toHaveBeenCalledTimes(1)
+
+    // Leaving and coming back is a new appearance.
+    send('pointerleave', 150, 45)
+    hoverAt(75, 45)
+    frames.flush()
+    expect(feedback.pixel).toHaveBeenCalledTimes(1)
+  })
+
+  it('plays confirm on pick, never open or cancel', () => {
+    const feedback = fakeFeedback()
+    attach({ feedback })
+    hoverAt(35, 45)
+    source.dispatchEvent(new MouseEvent('click', { clientX: 35, clientY: 45 }))
+    send('pointerleave', 150, 45)
+    expect(feedback.confirm).toHaveBeenCalledTimes(1)
+    expect(feedback.open).not.toHaveBeenCalled()
+    expect(feedback.cancel).not.toHaveBeenCalled()
+  })
+
+  it('ticks zoom only while the loupe shows', () => {
+    const feedback = fakeFeedback()
+    const h = attach({ feedback })
+    h.setMagnification(16) // e.g. an app slider, loupe hidden
+    expect(feedback.zoom).not.toHaveBeenCalled()
+    hoverAt(35, 45)
+    wheel(-100)
+    expect(feedback.zoom).toHaveBeenCalledTimes(1)
+  })
+
+  it('unlocks audio on pointerdown', () => {
+    const feedback = fakeFeedback()
+    attach({ feedback })
+    send('pointerdown', 35, 45)
+    expect(feedback.unlock).toHaveBeenCalledTimes(1)
   })
 })

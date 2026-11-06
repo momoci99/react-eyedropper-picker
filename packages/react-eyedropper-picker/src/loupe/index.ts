@@ -15,3 +15,8 @@ export {
 } from './useLoupeEyeDropper'
 export type { LoupePickResult, LoupeShape } from './session'
 export type { SampleSize } from './pixels'
+export type {
+  LoupeSoundEvent,
+  LoupeSoundOptions,
+  LoupeSoundPlayer,
+} from './sound'

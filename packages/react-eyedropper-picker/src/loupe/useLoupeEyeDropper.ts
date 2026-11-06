@@ -7,6 +7,7 @@ import {
   type RefObject,
 } from 'react'
 import { isEyeDropperSupported, useEyeDropper } from '../hooks/useEyeDropper'
+import { createLoupeFeedback } from './feedback'
 import {
   clampMagnification,
   resolveMagnificationConfig,
@@ -18,6 +19,7 @@ import {
   type LoupeSession,
   type LoupeShape,
 } from './session'
+import type { LoupeSoundOptions } from './sound'
 import { DEFAULT_LOUPE_SIZE } from './view'
 
 export type PickMode = 'auto' | 'native' | 'loupe'
@@ -48,6 +50,17 @@ export type LoupeOptions = MagnificationOptions & {
   sampleSize?: SampleSize
   /** Added to the loupe element (canvas + label). */
   className?: string
+  /**
+   * Sounds made with Web Audio: a tick per pixel (a "brrrt" when moving
+   * fast), a detent tick per zoom step, open, confirm and cancel.
+   * Default false. `true` or options turn it on.
+   */
+  sound?: boolean | LoupeSoundOptions
+  /**
+   * Short vibration on pixel ticks and confirm (`navigator.vibrate`,
+   * Android Chrome). Does nothing where unsupported. Default false.
+   */
+  haptics?: boolean
 }
 
 export type UseLoupeEyeDropperOptions = {
@@ -159,6 +172,10 @@ export const useLoupeEyeDropper = (
       if (!source) throw notSupported('The loupe needs a source element.')
       openOptions.signal?.throwIfAborted()
       setIsOpen(true)
+      // Before any await: `open()` runs in the click, a user gesture, so
+      // audio may start here.
+      const feedback = createLoupeFeedback(source.ownerDocument, loupe)
+      feedback?.unlock()
       try {
         if ('naturalWidth' in source && !source.complete) {
           await source.decode()
@@ -183,6 +200,7 @@ export const useLoupeEyeDropper = (
           grid: loupe.grid ?? true,
           sampleSize: loupe.sampleSize ?? 1,
           className: loupe.className,
+          feedback,
           signal: openOptions.signal,
         })
         session.current = s
@@ -192,6 +210,7 @@ export const useLoupeEyeDropper = (
           if (session.current === s) session.current = null
         }
       } finally {
+        feedback?.destroy()
         if (openId.current === id) setIsOpen(false)
       }
     },

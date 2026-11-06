@@ -74,6 +74,10 @@ export const LoupeDemo = ({ onPick }: Props) => {
   const [size, setSize] = useState(120)
   const [grid, setGrid] = useState(true)
   const [fancyLabel, setFancyLabel] = useState(false)
+  // The library default is off; the demo shows the effects on.
+  const [sound, setSound] = useState(true)
+  const [volume, setVolume] = useState(0.5)
+  const [haptics, setHaptics] = useState(true)
   const [history, setHistory] = useState<PickResult[]>([])
   const [error, setError] = useState<string | null>(null)
 
@@ -88,6 +92,8 @@ export const LoupeDemo = ({ onPick }: Props) => {
     shape,
     size,
     grid,
+    sound: sound && { volume },
+    haptics,
   }
   const { open, isOpen } = useLoupeEyeDropper({ source: imageRef, loupe })
 
@@ -342,6 +348,45 @@ export const LoupeDemo = ({ onPick }: Props) => {
               />
               <span>
                 Custom label (<code>renderLabel</code>, hover mode)
+              </span>
+            </label>
+          </fieldset>
+
+          <fieldset>
+            <legend>
+              Sound{' '}
+              <output>{sound ? `${Math.round(volume * 100)}%` : 'off'}</output>
+            </legend>
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={sound}
+                onChange={(e) => setSound(e.target.checked)}
+              />
+              <span>
+                Ticks, zoom detents, open / confirm / cancel (<code>sound</code>
+                )
+              </span>
+            </label>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={volume}
+              disabled={!sound}
+              onChange={(e) => setVolume(Number(e.target.value))}
+              aria-label="Volume"
+              aria-valuetext={`${Math.round(volume * 100)}%`}
+            />
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={haptics}
+                onChange={(e) => setHaptics(e.target.checked)}
+              />
+              <span>
+                Vibrate on ticks and confirm (<code>haptics</code>, Android)
               </span>
             </label>
           </fieldset>

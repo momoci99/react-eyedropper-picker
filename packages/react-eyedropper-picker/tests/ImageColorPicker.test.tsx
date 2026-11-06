@@ -10,6 +10,11 @@ import {
   mockCanvas,
   mockFrames,
 } from './loupe-mocks'
+import {
+  FakeAudioContext,
+  mockAudioContext,
+  resetAudioContext,
+} from './audio-mocks'
 
 let frames: ReturnType<typeof mockFrames>
 
@@ -207,5 +212,87 @@ describe('ImageColorPicker', () => {
     expect(hoverLoupe()).toBeInTheDocument()
     unmount()
     expect(hoverLoupe()).toBeNull()
+  })
+})
+
+describe('ImageColorPicker sound', () => {
+  beforeEach(() => mockAudioContext())
+  afterEach(() => resetAudioContext())
+
+  const pointerDown = () =>
+    image().dispatchEvent(
+      new PointerEvent('pointerdown', { pointerType: 'mouse', bubbles: true })
+    )
+
+  it('plays confirm on a hover pick after a pointerdown', () => {
+    const confirm = vi.fn()
+    render(
+      <ImageColorPicker
+        src="a.png"
+        alt=""
+        loupe={{ sound: { play: { confirm } } }}
+      />
+    )
+    hoverAt(35, 45)
+    pointerDown()
+    clickAt(35, 45)
+    expect(confirm).toHaveBeenCalledTimes(1)
+  })
+
+  it('calls the latest inline player without rebuilding', () => {
+    const first = vi.fn()
+    const second = vi.fn()
+    const { rerender } = render(
+      <ImageColorPicker
+        src="a.png"
+        alt=""
+        loupe={{ sound: { play: { confirm: first } } }}
+      />
+    )
+    rerender(
+      <ImageColorPicker
+        src="a.png"
+        alt=""
+        loupe={{ sound: { play: { confirm: second } } }}
+      />
+    )
+    hoverAt(35, 45)
+    pointerDown()
+    clickAt(35, 45)
+    expect(first).not.toHaveBeenCalled()
+    expect(second).toHaveBeenCalledTimes(1)
+    // One output gain: the engine was not rebuilt.
+    expect(FakeAudioContext.instances[0]!.gains).toHaveLength(1)
+  })
+
+  it('plays open on the keyboard loupe', () => {
+    const open = vi.fn()
+    render(
+      <ImageColorPicker
+        src="a.png"
+        alt=""
+        loupe={{ sound: { play: { open } } }}
+      />
+    )
+    act(() => image().focus())
+    key('Enter')
+    expect(open).toHaveBeenCalledTimes(1)
+    key('Escape')
+  })
+
+  it('stops when sound is turned off', () => {
+    const confirm = vi.fn()
+    const { rerender } = render(
+      <ImageColorPicker
+        src="a.png"
+        alt=""
+        loupe={{ sound: { play: { confirm } } }}
+      />
+    )
+    rerender(<ImageColorPicker src="a.png" alt="" loupe={{ sound: false }} />)
+    hoverAt(35, 45)
+    pointerDown()
+    clickAt(35, 45)
+    expect(confirm).not.toHaveBeenCalled()
   })
 })

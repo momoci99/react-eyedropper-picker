@@ -1,4 +1,5 @@
-import { vi } from 'vitest'
+import { vi, type Mock } from 'vitest'
+import type { LoupeFeedback } from '../src/loupe/feedback'
 import type { PixelBuffer } from '../src/loupe/pixels'
 import { rgbToHex } from '../src/utils/color'
 
@@ -123,3 +124,16 @@ export const touch = (
       bubbles: true,
     })
   )
+
+/** `LoupeFeedback` whose methods are spies. */
+export const fakeFeedback = (): {
+  [K in keyof LoupeFeedback]: Mock<LoupeFeedback[K]>
+} => ({
+  unlock: vi.fn(),
+  pixel: vi.fn(),
+  zoom: vi.fn(),
+  open: vi.fn(),
+  confirm: vi.fn(),
+  cancel: vi.fn(),
+  destroy: vi.fn(),
+})
