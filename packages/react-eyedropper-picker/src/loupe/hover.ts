@@ -51,6 +51,10 @@ export type LoupeHoverOptions = {
    * (on pick). No open or cancel: hovering is not opening.
    */
   feedback?: LoupeFeedback | null
+  /** See `LoupeViewOptions.smoothing`. */
+  smoothing?: number
+  /** See `LoupeViewOptions.animate`. */
+  animate?: boolean
 }
 
 export type LoupeHover = {
@@ -115,6 +119,8 @@ export const attachLoupeHover = (options: LoupeHoverOptions): LoupeHover => {
         label: options.label,
         // Hover is for pointers; keyboard users get the overlay instead.
         live: false,
+        smoothing: options.smoothing,
+        animate: options.animate,
       })
       if (!view) {
         throw new DOMException(
@@ -143,7 +149,7 @@ export const attachLoupeHover = (options: LoupeHoverOptions): LoupeHover => {
     if (!visible || !view) return
     view.element.style.display = pixel ? 'block' : 'none'
     if (!pixel) return
-    view.render(pixel, anchor, magnification)
+    if (view.render(pixel, anchor, magnification)) schedule()
     if (feedback) {
       const key = `${pixel.x},${pixel.y}`
       if (key !== lastTick) {
@@ -169,7 +175,7 @@ export const attachLoupeHover = (options: LoupeHoverOptions): LoupeHover => {
     if (visible || !view) return
     visible = true
     rect = source.getBoundingClientRect()
-    doc.body.append(view.element)
+    view.mount(doc.body)
     // Hide the cursor: the loupe center is the cursor.
     cursor = source.style.cursor
     source.style.cursor = 'none'
@@ -182,7 +188,7 @@ export const attachLoupeHover = (options: LoupeHoverOptions): LoupeHover => {
     lastTick = ''
     if (frame) win.cancelAnimationFrame(frame)
     frame = 0
-    view?.element.remove()
+    view?.unmount()
     source.style.cursor = cursor
   }
 

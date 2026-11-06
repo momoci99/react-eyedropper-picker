@@ -15,6 +15,7 @@ import {
   mockFrames,
   mockSource,
   wheel,
+  loupeLabel,
 } from './loupe-mocks'
 import {
   FakeAudioContext,
@@ -194,7 +195,7 @@ describe('useLoupeEyeDropper', () => {
     openLoupe(result)
     wheel(-100)
     expect(onChange).toHaveBeenCalledWith(4.4)
-    const label = getOverlay()!.firstElementChild!.lastElementChild!
+    const label = loupeLabel(getOverlay()!.firstElementChild!)
     expect(label.textContent).not.toContain('×')
 
     rerender({

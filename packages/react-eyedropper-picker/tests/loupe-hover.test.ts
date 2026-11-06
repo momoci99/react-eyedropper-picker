@@ -8,6 +8,11 @@ import {
   mockCanvas,
   mockFrames,
   mockSource,
+  loupeLabel,
+  mockAnimate,
+  mockReducedMotion,
+  resetAnimate,
+  resetReducedMotion,
 } from './loupe-mocks'
 
 let frames: ReturnType<typeof mockFrames>
@@ -75,7 +80,7 @@ const wheel = (deltaY: number) =>
   )
 
 const loupe = () => document.querySelector<HTMLElement>('[aria-hidden="true"]')
-const labelText = () => loupe()!.lastElementChild!.textContent
+const labelText = () => loupeLabel(loupe()!).textContent
 
 describe('attachLoupeHover', () => {
   it('shows nothing until the pointer is over the source', () => {
@@ -146,7 +151,7 @@ describe('attachLoupeHover', () => {
     attach({ label })
     hoverAt(35, 45)
     frames.flush()
-    expect(loupe()!.lastElementChild).toBe(label)
+    expect(loupeLabel(loupe()!)).toBe(label)
     expect(label.textContent).toBe('')
   })
 
@@ -285,5 +290,49 @@ describe('attachLoupeHover feedback', () => {
     attach({ feedback })
     send('pointerdown', 35, 45)
     expect(feedback.unlock).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('attachLoupeHover motion', () => {
+  afterEach(() => {
+    resetAnimate()
+    resetReducedMotion()
+  })
+
+  it('grows in on show and shrinks out on leave', () => {
+    const animations = mockAnimate()
+    attach()
+    hoverAt(35, 45)
+    expect(animations).toHaveLength(1)
+    const el = loupe()!
+    send('pointerleave', 150, 45)
+    expect(animations).toHaveLength(2)
+    expect(el).toBeInTheDocument()
+    animations[1]!.finish()
+    expect(el).not.toBeInTheDocument()
+  })
+
+  it('coming back during the shrink-out keeps the loupe', () => {
+    const animations = mockAnimate()
+    attach()
+    hoverAt(35, 45)
+    const el = loupe()!
+    send('pointerleave', 150, 45)
+    hoverAt(45, 45)
+    expect(animations[1]!.cancel).toHaveBeenCalled()
+    // A late finish of the cancelled shrink-out does nothing.
+    animations[1]!.finish()
+    expect(el).toBeInTheDocument()
+    expect(loupe()).toBe(el)
+  })
+
+  it('hides at once with reduced motion', () => {
+    const animations = mockAnimate()
+    mockReducedMotion(true)
+    attach()
+    hoverAt(35, 45)
+    send('pointerleave', 150, 45)
+    expect(animations).toHaveLength(0)
+    expect(loupe()).toBeNull()
   })
 })

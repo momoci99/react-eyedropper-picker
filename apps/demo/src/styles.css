@@ -266,6 +266,14 @@ input[type='range'] {
   accent-color: var(--accent);
 }
 
+.check.sub {
+  padding-left: 24px;
+}
+
+.check:has(input:disabled) {
+  color: var(--muted);
+}
+
 .hint {
   font-size: 13px;
   color: var(--muted);

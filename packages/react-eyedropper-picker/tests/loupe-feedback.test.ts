@@ -116,7 +116,7 @@ describe('createLoupeFeedback', () => {
     feedback.pixel()
     at(10)
     feedback.pixel()
-    at(30)
+    at(40)
     feedback.pixel()
     expect(spies.pixel).toHaveBeenCalledTimes(2)
     expect(spies.pixel.mock.calls[0]![1]).toBe(0)

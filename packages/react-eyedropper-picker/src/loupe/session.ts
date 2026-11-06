@@ -59,6 +59,10 @@ export type LoupeSessionOptions = {
    * outside, not `cancel()` or `signal`).
    */
   feedback?: LoupeFeedback | null
+  /** See `LoupeViewOptions.smoothing`. */
+  smoothing?: number
+  /** See `LoupeViewOptions.animate`. */
+  animate?: boolean
   signal?: AbortSignal
 }
 
@@ -157,6 +161,8 @@ export const startLoupeSession = (
     className: options.className,
     label: options.label,
     live: true,
+    smoothing: options.smoothing,
+    animate: options.animate,
   })
   if (!view) {
     reject(new DOMException('2D canvas is not available', 'NotSupportedError'))
@@ -176,7 +182,8 @@ export const startLoupeSession = (
     }
     if (!pixel) return
 
-    view.render(pixel, anchor, magnification)
+    // Gliding or zooming: keep drawing until it settles.
+    if (view.render(pixel, anchor, magnification)) schedule()
     if (feedback) {
       const key = `${pixel.x},${pixel.y}`
       if (key !== lastTick) {
@@ -242,7 +249,10 @@ export const startLoupeSession = (
     listeners.abort()
     if (frame) win.cancelAnimationFrame(frame)
     view.destroy()
+    // The page is usable at once; the loupe shrinks out on its own.
+    if (loupe.isConnected) doc.body.append(loupe)
     overlay.remove()
+    view.unmount()
     previousFocus?.focus?.()
   }
 
@@ -415,6 +425,7 @@ export const startLoupeSession = (
   }
 
   doc.body.append(overlay)
+  view.appear()
   overlay.focus({ preventScroll: true })
   feedback?.unlock()
   feedback?.open()

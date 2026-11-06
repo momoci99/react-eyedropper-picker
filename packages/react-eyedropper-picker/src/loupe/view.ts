@@ -2,6 +2,15 @@ import { rgbToHex } from '../utils/color'
 import { createLoupeRenderer } from './draw'
 import type { Point } from './geometry'
 import { formatMagnification } from './magnification'
+import {
+  FRAME_MS,
+  followFactor,
+  followMagnification,
+  followPoint,
+  reducedMotionQuery,
+  smoothingTimeConstant,
+  ZOOM_TIME_CONSTANT,
+} from './motion'
 import { samplePixel, type PixelBuffer, type SampleSize } from './pixels'
 
 export type LoupeShape = 'circle' | 'square'
@@ -20,13 +29,27 @@ export type LoupeViewOptions = {
   label?: HTMLElement
   /** Announce the hex label to screen readers. */
   live: boolean
+  /** 0 to 1: how much the loupe glides after the pointer. Default 0. */
+  smoothing?: number
+  /** Grow in, shrink out and animated zoom. Default true. */
+  animate?: boolean
 }
 
 export type LoupeView = {
   /** `position: fixed`. The caller adds it to the page. */
   element: HTMLDivElement
-  /** Draws `pixel` with the loupe centered on the client point `anchor`. */
-  render: (pixel: Point, anchor: Point, magnification: number) => void
+  /**
+   * Draws `pixel` with the loupe heading for the client point `anchor`.
+   * The pixel is exact; only the loupe's position and zoom glide. Returns
+   * true while still moving: call again next frame.
+   */
+  render: (pixel: Point, anchor: Point, magnification: number) => boolean
+  /** Adds the element to `parent` and plays the grow-in. */
+  mount: (parent: Node) => void
+  /** Grow-in for an element the caller added. The next render snaps. */
+  appear: () => void
+  /** Plays the shrink-out, then removes the element. */
+  unmount: () => void
   /** Shows `12.5×` next to the hex for a second. */
   showMagnification: (value: number) => void
   destroy: () => void
@@ -37,6 +60,22 @@ export const DEFAULT_LOUPE_SIZE = 120
 /** How long the `12.5×` badge stays after the last zoom change. */
 const ZOOM_BADGE_MS = 1000
 const LABEL_GAP = 8
+
+const ENTER: Keyframe[] = [
+  { transform: 'scale(0.6)', opacity: 0 },
+  { transform: 'scale(1)', opacity: 1 },
+]
+// A little overshoot: the loupe pops in.
+const ENTER_TIMING = { duration: 160, easing: 'cubic-bezier(0.3, 1.4, 0.5, 1)' }
+const EXIT: Keyframe[] = [
+  { transform: 'scale(1)', opacity: 1 },
+  { transform: 'scale(0.7)', opacity: 0 },
+]
+const EXIT_TIMING = {
+  duration: 110,
+  easing: 'ease-in',
+  fill: 'forwards',
+} as const
 
 /** Hex of the `sampleSize` block at `p`. */
 export const pixelHex = (
@@ -59,6 +98,9 @@ export const createLoupeView = (
 ): LoupeView | null => {
   const { size, sampleSize } = options
   const win = doc.defaultView!
+  const animate = options.animate !== false
+  const glide = smoothingTimeConstant(options.smoothing)
+  const reducedMotion = reducedMotionQuery(win)
 
   const element = doc.createElement('div')
   if (options.className) element.className = options.className
@@ -71,6 +113,10 @@ export const createLoupeView = (
     pointerEvents: 'none',
     willChange: 'transform',
   })
+  // Scaled by the grow-in / shrink-out; `element` only moves.
+  const inner = doc.createElement('div')
+  inner.style.transformOrigin = `${size / 2}px ${size / 2}px`
+  element.append(inner)
 
   const canvas = doc.createElement('canvas')
   Object.assign(canvas.style, {
@@ -111,26 +157,99 @@ export const createLoupeView = (
     zoomText.hidden = true
     label.append(hexText, zoomText)
   }
-  element.append(canvas, label)
+  inner.append(canvas, label)
 
   let lastHex = ''
   let badgeTimer: ReturnType<typeof setTimeout> | undefined
+  /** Where the loupe is drawn now; null snaps on the next render. */
+  let shown: Point | null = null
+  let shownMagnification = 0
+  /** Time of the last render while moving; 0 at rest. */
+  let lastFrame = 0
+  /** What the canvas shows, to skip redraws while only gliding. */
+  let drawnX = NaN
+  let drawnY = NaN
+  let drawnMagnification = NaN
+  let drawnRatio = NaN
+  let exit: Animation | null = null
+
+  /** Animations run: on, supported, and no reduced motion. */
+  const animates = () =>
+    animate && typeof inner.animate === 'function' && !reducedMotion()
+
+  const appear = () => {
+    exit?.cancel()
+    exit = null
+    shown = null
+    shownMagnification = 0
+    lastFrame = 0
+    if (animates()) inner.animate(ENTER, ENTER_TIMING)
+  }
 
   return {
     element,
     render: (pixel, anchor, magnification) => {
-      element.style.transform = `translate(${anchor.x - size / 2}px, ${anchor.y - size / 2}px)`
-      renderer.draw(pixel, {
-        size,
-        magnification,
-        devicePixelRatio: win.devicePixelRatio || 1,
-        grid: options.grid,
-        sampleSize,
-      })
-      const hex = pixelHex(buffer, pixel, sampleSize)
-      if (hex !== lastHex) {
-        lastHex = hex
-        hexText.textContent = hex
+      const now = win.performance.now()
+      const dt = lastFrame ? now - lastFrame : FRAME_MS
+      const still = reducedMotion()
+      shown = shown
+        ? followPoint(shown, anchor, still ? 1 : followFactor(dt, glide))
+        : anchor
+      shownMagnification = shownMagnification
+        ? followMagnification(
+            shownMagnification,
+            magnification,
+            still || !animate ? 1 : followFactor(dt, ZOOM_TIME_CONSTANT)
+          )
+        : magnification
+      const moving = shown !== anchor || shownMagnification !== magnification
+      lastFrame = moving ? now : 0
+
+      element.style.transform = `translate(${shown.x - size / 2}px, ${shown.y - size / 2}px)`
+      const ratio = win.devicePixelRatio || 1
+      if (
+        pixel.x !== drawnX ||
+        pixel.y !== drawnY ||
+        shownMagnification !== drawnMagnification ||
+        ratio !== drawnRatio
+      ) {
+        drawnX = pixel.x
+        drawnY = pixel.y
+        drawnMagnification = shownMagnification
+        drawnRatio = ratio
+        renderer.draw(pixel, {
+          size,
+          magnification: shownMagnification,
+          devicePixelRatio: ratio,
+          grid: options.grid,
+          sampleSize,
+        })
+        const hex = pixelHex(buffer, pixel, sampleSize)
+        if (hex !== lastHex) {
+          lastHex = hex
+          hexText.textContent = hex
+        }
+      }
+      return moving
+    },
+    mount: (parent) => {
+      if (element.parentNode !== parent) parent.appendChild(element)
+      appear()
+    },
+    appear,
+    unmount: () => {
+      if (!element.isConnected || exit) return
+      if (!animates() || element.style.display === 'none') {
+        element.remove()
+        return
+      }
+      const a = inner.animate(EXIT, EXIT_TIMING)
+      exit = a
+      a.onfinish = () => {
+        if (exit !== a) return
+        exit = null
+        element.remove()
+        a.cancel()
       }
     },
     showMagnification: (value) => {
