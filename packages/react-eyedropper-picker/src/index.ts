@@ -22,4 +22,5 @@ export {
   type ColorSelectionOptions,
   type ColorSelectionResult,
 } from './hooks/useEyeDropper'
+export type { ColorPickerTheme } from './theme'
 export * from './utils/color'

@@ -336,3 +336,41 @@ describe('attachLoupeHover motion', () => {
     expect(loupe()).toBeNull()
   })
 })
+
+describe('attachLoupeHover label swatch', () => {
+  afterEach(() => resetReducedMotion())
+
+  const swatch = () => loupeLabel(loupe()!).firstElementChild as HTMLElement
+  const rgb = (x: number, y: number) => `rgb(${x * 10}, ${y * 10}, 0)`
+
+  it('shows the color, fading only after the first one', () => {
+    attach()
+    hoverAt(35, 45)
+    frames.flush()
+    expect(swatch().style.backgroundColor).toBe(rgb(3, 4))
+    expect(swatch().style.transition).toBe('none')
+    send('pointermove', 45, 45)
+    frames.flush()
+    expect(swatch().style.backgroundColor).toBe(rgb(4, 4))
+    expect(swatch().style.transition).toContain('background-color')
+  })
+
+  const fadesAfterMove = () => {
+    hoverAt(35, 45)
+    frames.flush()
+    send('pointermove', 45, 45)
+    frames.flush()
+    return swatch().style.transition !== 'none'
+  }
+
+  it('does not fade with reduced motion', () => {
+    mockReducedMotion(true)
+    attach()
+    expect(fadesAfterMove()).toBe(false)
+  })
+
+  it('does not fade with animate: false', () => {
+    attach({ animate: false })
+    expect(fadesAfterMove()).toBe(false)
+  })
+})

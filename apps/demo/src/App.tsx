@@ -1,14 +1,25 @@
 import { useRef, useState } from 'react'
-import { ColorPicker, useEyeDropper } from 'react-eyedropper-picker'
+import {
+  ColorPicker,
+  useEyeDropper,
+  type ColorPickerTheme,
+} from 'react-eyedropper-picker'
 import { useLoupeEyeDropper } from 'react-eyedropper-picker/loupe'
 import { LoupeDemo } from './LoupeDemo'
 import { drawPixelArt, toDataUrl } from './samples'
 
 type Dropper = 'loupe' | 'native'
 
+const THEMES: { id: ColorPickerTheme; label: string }[] = [
+  { id: 'auto', label: 'Auto (OS)' },
+  { id: 'light', label: 'Light' },
+  { id: 'dark', label: 'Dark' },
+]
+
 export const App = () => {
   const [color, setColor] = useState('#6366f1')
   const [dropper, setDropper] = useState<Dropper>('loupe')
+  const [theme, setTheme] = useState<ColorPickerTheme>('auto')
   // Client-only demo: drawing in the initializer is fine.
   const [photo] = useState(() => toDataUrl(drawPixelArt))
   const photoRef = useRef<HTMLImageElement>(null)
@@ -66,8 +77,22 @@ export const App = () => {
             Native · whole screen{nativeSupported ? '' : ' (Chromium only)'}
           </button>
         </div>
+        <div className="segmented" role="radiogroup" aria-label="Theme">
+          {THEMES.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              role="radio"
+              aria-checked={theme === t.id}
+              onClick={() => setTheme(t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
         <div className="picker-row">
           <ColorPicker
+            theme={theme}
             value={color}
             onChange={setColor}
             eyeDropper={dropper === 'loupe' ? loupe : undefined}
