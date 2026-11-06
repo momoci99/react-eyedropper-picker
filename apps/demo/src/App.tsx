@@ -13,7 +13,10 @@ export const App = () => {
   const [photo] = useState(() => toDataUrl(drawPixelArt))
   const photoRef = useRef<HTMLImageElement>(null)
   const { isSupported: nativeSupported } = useEyeDropper()
-  const loupe = useLoupeEyeDropper({ source: photoRef })
+  const loupe = useLoupeEyeDropper({
+    source: photoRef,
+    loupe: { sound: true, haptics: true },
+  })
 
   return (
     <main className="page">

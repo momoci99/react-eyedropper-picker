@@ -7,6 +7,7 @@ import {
 } from '../src/loupe/session'
 import {
   click,
+  fakeFeedback,
   getOverlay,
   gridBuffer,
   gridHex,
@@ -355,5 +356,83 @@ describe('startLoupeSession', () => {
       getOverlay()!.dispatchEvent(e)
       expect(e.defaultPrevented).toBe(true)
     })
+  })
+})
+
+describe('startLoupeSession feedback', () => {
+  it('unlocks audio and plays open on start', () => {
+    const feedback = fakeFeedback()
+    start({ feedback })
+    expect(feedback.unlock).toHaveBeenCalled()
+    expect(feedback.open).toHaveBeenCalledTimes(1)
+  })
+
+  it('ticks when the center pixel changes, not on the first draw', () => {
+    const feedback = fakeFeedback()
+    start({ feedback })
+    frames.flush()
+    expect(feedback.pixel).not.toHaveBeenCalled()
+    pointer('pointermove', 31, 42)
+    pointer('pointermove', 45, 45)
+    frames.flush()
+    expect(feedback.pixel).toHaveBeenCalledTimes(1)
+    pointer('pointermove', 46, 46) // same pixel
+    frames.flush()
+    expect(feedback.pixel).toHaveBeenCalledTimes(1)
+    key('ArrowRight')
+    frames.flush()
+    expect(feedback.pixel).toHaveBeenCalledTimes(2)
+  })
+
+  it('ticks zoom once per detent', () => {
+    const feedback = fakeFeedback()
+    start({ feedback })
+    wheel(-100)
+    expect(feedback.zoom).toHaveBeenCalledTimes(1)
+    // Half a notch stays on the same detent.
+    wheel(-50)
+    wheel(-50)
+    expect(feedback.zoom).toHaveBeenCalledTimes(2)
+  })
+
+  it('plays confirm on pick', async () => {
+    const feedback = fakeFeedback()
+    const s = start({ feedback })
+    key('Enter')
+    await s.result
+    expect(feedback.confirm).toHaveBeenCalledTimes(1)
+    expect(feedback.cancel).not.toHaveBeenCalled()
+  })
+
+  it('plays cancel on Escape and on a click outside', async () => {
+    for (const close of [() => key('Escape'), () => click(150, 50)]) {
+      const feedback = fakeFeedback()
+      const s = start({ feedback })
+      close()
+      await expect(s.result).rejects.toThrow()
+      expect(feedback.cancel).toHaveBeenCalledTimes(1)
+    }
+  })
+
+  it('stays silent on cancel() and an aborted signal', async () => {
+    const feedback = fakeFeedback()
+    const s = start({ feedback })
+    s.cancel()
+    await expect(s.result).rejects.toThrow()
+
+    const controller = new AbortController()
+    const t = start({ feedback, signal: controller.signal })
+    controller.abort()
+    await expect(t.result).rejects.toThrow()
+    expect(feedback.cancel).not.toHaveBeenCalled()
+  })
+
+  it('unlocks audio on pointerdown and keydown', () => {
+    const feedback = fakeFeedback()
+    start({ feedback })
+    feedback.unlock.mockClear()
+    pointer('pointerdown', 30, 30)
+    key('ArrowLeft')
+    expect(feedback.unlock).toHaveBeenCalledTimes(2)
   })
 })

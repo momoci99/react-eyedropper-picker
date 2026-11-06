@@ -71,7 +71,10 @@ export const loupeDemo = (page: Page) => {
     dialog: page.getByRole('dialog'),
     hex: card.locator('.result-hex'),
     coords: card.locator('.result .small'),
-    zoom: card.locator('legend output'),
+    zoom: card
+      .locator('legend', { hasText: 'Magnification' })
+      .locator('output'),
+    sound: card.getByRole('checkbox', { name: /Ticks, zoom detents/ }),
     mode: (name: RegExp) =>
       card
         .getByRole('radiogroup', { name: 'Mode' })

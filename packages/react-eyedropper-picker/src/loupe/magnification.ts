@@ -225,3 +225,28 @@ export const keyMagnification = (
 /** Label shown while zooming: one decimal at most, e.g. `8×`, `12.5×`. */
 export const formatMagnification = (value: number): string =>
   `${Math.round(value * 10) / 10}×`
+
+/**
+ * Index of the zoom detent `value` sits on, for the zoom tick sound: a
+ * tick plays when this changes. With steps, the number of steps at or
+ * below `value`. Continuous, one detent per ×1.1, so each wheel notch or
+ * key press crosses exactly one and a pinch ticks as it passes them.
+ */
+export const magnificationDetent = (
+  value: number,
+  config: MagnificationConfig
+): number => {
+  const { steps } = config
+  if (!steps) {
+    // The small bias keeps exact powers of 1.1 (after float noise) on
+    // their own detent.
+    return Math.floor(
+      Math.log(value) / Math.log(MAGNIFICATION_STEP_FACTOR) + 1e-6
+    )
+  }
+  let count = 0
+  for (let i = 0; i < steps.length; i++) {
+    if (!isAbove(steps[i]!, value)) count++
+  }
+  return count
+}

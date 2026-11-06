@@ -155,6 +155,31 @@ const dropper = useLoupeEyeDropper({ source: img })
 
 `useColorPicker({ eyeDropper })` does the same for headless pickers.
 
+#### Sound and haptics
+
+The loupe can tick like a mechanical dial as it moves: one tick per source pixel, a "brrrt" when you sweep fast, a detent tick per zoom step, a "whoosh" on open, a click on confirm, a low tone on cancel. Both are **off by default**: turn them on with one option, on `ImageColorPicker` or `useLoupeEyeDropper`.
+
+```tsx
+<ImageColorPicker src="/photo.jpg" alt="" loupe={{ sound: true, haptics: true }} />
+
+useLoupeEyeDropper({
+  source: img,
+  loupe: {
+    sound: {
+      volume: 0.3, // 0 to 1, default 0.5
+      events: { cancel: false }, // pixel, zoom, open, confirm, cancel
+      minTickInterval: 40, // ms, ticks closer than this merge. Default 25
+    },
+  },
+})
+```
+
+- Sounds are made with Web Audio: no audio files, no network requests.
+- Browsers mute audio until the user interacts with the page. `open()` and pointer presses unlock it, so the first ticks of a hover may be silent until the first click anywhere on the page.
+- Sounds stop while the tab is hidden.
+- `haptics` vibrates on pixel ticks and confirm with `navigator.vibrate` (Android Chrome). Elsewhere, such as iOS Safari, it does nothing.
+- Custom sounds: `play: { confirm: (ctx, speed, output) => ... }` replaces an event's sound. Connect your nodes (or an `AudioBuffer` source) to `output`, not `ctx.destination`, so `volume` applies. `speed` is 0 (slow) to 1 (fast) for `pixel` and `zoom`.
+
 ### Color utilities
 
 `normalizeHex`, `isValidHex`, `hexToRgb`, `rgbToHex`, `rgbToHsv`, `hsvToRgb`, `hexToHsv`, `hsvToHex`.

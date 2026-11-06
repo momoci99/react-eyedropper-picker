@@ -9,11 +9,13 @@ import {
 import {
   clampMagnification,
   keyMagnification,
+  magnificationDetent,
   pinchMagnification,
   wheelDeltaToNotches,
   wheelMagnification,
   type MagnificationConfig,
 } from './magnification'
+import type { LoupeFeedback } from './feedback'
 import type { LoupeSource, PixelBuffer, SampleSize } from './pixels'
 import { createTouchTracker } from './touch'
 import { createLoupeView, pixelHex, type LoupeShape } from './view'
@@ -51,6 +53,12 @@ export type LoupeSessionOptions = {
   label?: HTMLElement
   /** Called once per frame when the pixel under the loupe changes. */
   onAim?: (result: LoupePickResult) => void
+  /**
+   * Sound and haptics. The caller owns it (creates and destroys it); the
+   * session plays open, pixel, zoom, confirm and cancel (Escape or a click
+   * outside, not `cancel()` or `signal`).
+   */
+  feedback?: LoupeFeedback | null
   signal?: AbortSignal
 }
 
@@ -92,6 +100,7 @@ export const startLoupeSession = (
   options: LoupeSessionOptions
 ): LoupeSession => {
   const { source, buffer, config, size, sampleSize, signal } = options
+  const feedback = options.feedback ?? null
   const { width: srcWidth, height: srcHeight } = buffer
   const doc = source.ownerDocument
   const win = doc.defaultView!
@@ -120,6 +129,9 @@ export const startLoupeSession = (
   let lastCursor = ''
   /** Last pixel sent to `onAim`. */
   let lastAim = ''
+  /** Last pixel that ticked; starts at the first pixel, which doesn't. */
+  let lastTick = `${pixel.x},${pixel.y}`
+  let detent = magnificationDetent(magnification, config)
   /** True once the user aimed with a pointer move or a key. */
   let aimed = false
 
@@ -165,6 +177,13 @@ export const startLoupeSession = (
     if (!pixel) return
 
     view.render(pixel, anchor, magnification)
+    if (feedback) {
+      const key = `${pixel.x},${pixel.y}`
+      if (key !== lastTick) {
+        lastTick = key
+        feedback.pixel()
+      }
+    }
     if (options.onAim) {
       const r = pickResult(pixel)
       const key = `${r.x},${r.y},${r.sRGBHex}`
@@ -190,6 +209,11 @@ export const startLoupeSession = (
   const showMagnification = (value: number) => {
     magnification = value
     view.showMagnification(value)
+    const d = magnificationDetent(value, config)
+    if (d !== detent) {
+      detent = d
+      feedback?.zoom()
+    }
     schedule()
   }
 
@@ -224,6 +248,7 @@ export const startLoupeSession = (
 
   const confirm = (p: Point) => {
     if (settled) return
+    feedback?.confirm()
     finish()
     resolve(pickResult(p))
   }
@@ -232,6 +257,12 @@ export const startLoupeSession = (
     if (settled) return
     finish()
     reject(abortError())
+  }
+
+  /** Escape or a click outside: the only cancels that make a sound. */
+  const userCancel = () => {
+    if (!settled) feedback?.cancel()
+    cancel()
   }
 
   // ── Events ──
@@ -255,13 +286,15 @@ export const startLoupeSession = (
       const p = pixelAt(x, y)
       if (p) confirm(pixel ?? p)
       // Tap outside cancels; a drag that ends outside keeps the loupe open.
-      else if (tap) cancel()
+      else if (tap) userCancel()
     },
   })
 
   overlay.addEventListener(
     'pointerdown',
     (e) => {
+      // A gesture: lets audio start if `open()` came without one.
+      feedback?.unlock()
       if (e.pointerType === 'touch') touch.down(e)
     },
     passive
@@ -305,7 +338,7 @@ export const startLoupeSession = (
       // Touch is handled on pointerup. Some browsers still send a click.
       if ((e as PointerEvent).pointerType === 'touch') return
       const p = pixelAt(e.clientX, e.clientY)
-      if (!p) return cancel()
+      if (!p) return userCancel()
       // Confirm what the loupe shows. The click point can land on the next
       // source pixel when the source is shown smaller than its size (click
       // and move coordinates round differently), and arrow keys may have
@@ -334,6 +367,7 @@ export const startLoupeSession = (
   doc.addEventListener(
     'keydown',
     (e) => {
+      feedback?.unlock()
       const arrow = ARROWS[e.key]
       if (arrow) {
         const step = e.shiftKey ? 10 : 1
@@ -352,7 +386,7 @@ export const startLoupeSession = (
       } else if (e.key === 'Enter') {
         if (pixel) confirm(pixel)
       } else if (e.key === 'Escape') {
-        cancel()
+        userCancel()
       } else if (e.key === 'Tab') {
         // Keep focus inside the overlay while it is open.
       } else {
@@ -382,6 +416,8 @@ export const startLoupeSession = (
 
   doc.body.append(overlay)
   overlay.focus({ preventScroll: true })
+  feedback?.unlock()
+  feedback?.open()
   schedule()
 
   return {

@@ -6,11 +6,13 @@ import {
 } from './geometry'
 import {
   clampMagnification,
+  magnificationDetent,
   pinchMagnification,
   wheelDeltaToNotches,
   wheelMagnification,
   type MagnificationConfig,
 } from './magnification'
+import type { LoupeFeedback } from './feedback'
 import type { LoupeSource, PixelBuffer, SampleSize } from './pixels'
 import { TOUCH_GAP, type LoupePickResult } from './session'
 import { createTouchTracker } from './touch'
@@ -44,6 +46,11 @@ export type LoupeHoverOptions = {
   onAim?: (result: LoupePickResult) => void
   onPick: (result: LoupePickResult) => void
   onError?: (error: unknown) => void
+  /**
+   * Sound and haptics; the caller owns it. Plays pixel, zoom and confirm
+   * (on pick). No open or cancel: hovering is not opening.
+   */
+  feedback?: LoupeFeedback | null
 }
 
 export type LoupeHover = {
@@ -68,6 +75,7 @@ export type LoupeHover = {
  */
 export const attachLoupeHover = (options: LoupeHoverOptions): LoupeHover => {
   const { source, config, size, sampleSize } = options
+  const feedback = options.feedback ?? null
   const doc = source.ownerDocument
   const win = doc.defaultView!
   // The union type of `source` hides the typed listener overloads.
@@ -87,6 +95,9 @@ export const attachLoupeHover = (options: LoupeHoverOptions): LoupeHover => {
   let visible = false
   let cursor = ''
   let lastAim = ''
+  /** Last pixel that ticked. Empty right after showing: no tick on entry. */
+  let lastTick = ''
+  let detent = magnificationDetent(magnification, config)
 
   /** Reads pixels and builds the view once. False if not possible (yet). */
   const ready = (): boolean => {
@@ -133,6 +144,13 @@ export const attachLoupeHover = (options: LoupeHoverOptions): LoupeHover => {
     view.element.style.display = pixel ? 'block' : 'none'
     if (!pixel) return
     view.render(pixel, anchor, magnification)
+    if (feedback) {
+      const key = `${pixel.x},${pixel.y}`
+      if (key !== lastTick) {
+        if (lastTick) feedback.pixel()
+        lastTick = key
+      }
+    }
     if (options.onAim) {
       const r = pickResult(pixel)
       const key = `${r.x},${r.y},${r.sRGBHex}`
@@ -161,6 +179,7 @@ export const attachLoupeHover = (options: LoupeHoverOptions): LoupeHover => {
     if (!visible) return
     visible = false
     pixel = null
+    lastTick = ''
     if (frame) win.cancelAnimationFrame(frame)
     frame = 0
     view?.element.remove()
@@ -179,7 +198,18 @@ export const attachLoupeHover = (options: LoupeHoverOptions): LoupeHover => {
   const showMagnification = (value: number) => {
     magnification = value
     view?.showMagnification(value)
+    const d = magnificationDetent(value, config)
+    if (d !== detent) {
+      detent = d
+      // Not for a prop change (e.g. an app slider) while hidden.
+      if (visible) feedback?.zoom()
+    }
     schedule()
+  }
+
+  const pick = (p: Point) => {
+    feedback?.confirm()
+    options.onPick(pickResult(p))
   }
 
   // ── Events ──
@@ -200,7 +230,7 @@ export const attachLoupeHover = (options: LoupeHoverOptions): LoupeHover => {
       const p = pinched || cancelled ? null : (pixel ?? pixelAt(x, y))
       hide()
       // Lifting off the source picks nothing.
-      if (p && pixelAt(x, y)) options.onPick(pickResult(p))
+      if (p && pixelAt(x, y)) pick(p)
     },
   })
 
@@ -216,6 +246,8 @@ export const attachLoupeHover = (options: LoupeHoverOptions): LoupeHover => {
   el.addEventListener(
     'pointerdown',
     (e) => {
+      // A gesture: lets audio start.
+      feedback?.unlock()
       if (e.pointerType !== 'touch' || !ready()) return
       // Keep getting moves when the finger slides off the source.
       try {
@@ -265,7 +297,7 @@ export const attachLoupeHover = (options: LoupeHoverOptions): LoupeHover => {
     (e) => {
       // Touch picks on lift.
       if ((e as PointerEvent).pointerType === 'touch') return
-      if (visible && pixel) options.onPick(pickResult(pixel))
+      if (visible && pixel) pick(pixel)
     },
     { signal: listeners.signal }
   )

@@ -16,6 +16,11 @@ import {
   mockSource,
   wheel,
 } from './loupe-mocks'
+import {
+  FakeAudioContext,
+  mockAudioContext,
+  resetAudioContext,
+} from './audio-mocks'
 
 const installEyeDropper = (sRGBHex = '#123456') => {
   ;(window as any).EyeDropper = class {
@@ -206,5 +211,36 @@ describe('ColorPicker integration', () => {
     // Compile-time check: the loupe hook result is an EyeDropperLike.
     const dropper: EyeDropperLike = result.current
     expect(dropper.isSupported).toBe(true)
+  })
+})
+
+describe('useLoupeEyeDropper sound', () => {
+  beforeEach(() => mockAudioContext())
+  afterEach(() => resetAudioContext())
+
+  it('makes no AudioContext with sound off (default)', async () => {
+    const source = mockSource()
+    const { result } = render({ source })
+    const pending = openLoupe(result)
+    key('Enter')
+    await pending
+    expect(FakeAudioContext.instances).toHaveLength(0)
+  })
+
+  it('unlocks audio in open() and plays open and confirm', async () => {
+    const open = vi.fn()
+    const confirm = vi.fn()
+    const source = mockSource()
+    const { result } = render({
+      source,
+      loupe: { sound: { play: { open, confirm } } },
+    })
+    const pending = openLoupe(result)
+    const ctx = FakeAudioContext.instances[0]!
+    expect(ctx.resume).toHaveBeenCalled()
+    expect(open).toHaveBeenCalledTimes(1)
+    key('Enter')
+    await pending
+    expect(confirm).toHaveBeenCalledTimes(1)
   })
 })
