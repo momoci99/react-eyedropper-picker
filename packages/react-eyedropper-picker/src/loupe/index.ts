@@ -1,4 +1,9 @@
 export {
+  ImageColorPicker,
+  type ImageColorPickerLoupeOptions,
+  type ImageColorPickerProps,
+} from './ImageColorPicker'
+export {
   useLoupeEyeDropper,
   type LoupeOpenOptions,
   type LoupeOptions,
@@ -8,5 +13,5 @@ export {
   type UseLoupeEyeDropperOptions,
   type UseLoupeEyeDropperResult,
 } from './useLoupeEyeDropper'
-export type { LoupeShape } from './session'
+export type { LoupePickResult, LoupeShape } from './session'
 export type { SampleSize } from './pixels'

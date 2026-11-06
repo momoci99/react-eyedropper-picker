@@ -113,3 +113,10 @@ export const drawColorField = (canvas: HTMLCanvasElement) => {
   ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
   ctx.fillText('1px lines: try 32× and up', 64, 48)
 }
+
+/** Draws a sample once and returns it as a PNG data URL for an `<img>`. */
+export const toDataUrl = (draw: (canvas: HTMLCanvasElement) => void) => {
+  const canvas = document.createElement('canvas')
+  draw(canvas)
+  return canvas.toDataURL('image/png')
+}

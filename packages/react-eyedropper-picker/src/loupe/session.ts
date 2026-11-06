@@ -1,5 +1,3 @@
-import { rgbToHex } from '../utils/color'
-import { createLoupeRenderer } from './draw'
 import {
   clampPixel,
   clientToSourcePixel,
@@ -10,21 +8,17 @@ import {
 } from './geometry'
 import {
   clampMagnification,
-  formatMagnification,
   keyMagnification,
   pinchMagnification,
   wheelDeltaToNotches,
   wheelMagnification,
   type MagnificationConfig,
 } from './magnification'
-import {
-  samplePixel,
-  type LoupeSource,
-  type PixelBuffer,
-  type SampleSize,
-} from './pixels'
+import type { LoupeSource, PixelBuffer, SampleSize } from './pixels'
+import { createTouchTracker } from './touch'
+import { createLoupeView, pixelHex, type LoupeShape } from './view'
 
-export type LoupeShape = 'circle' | 'square'
+export type { LoupeShape } from './view'
 
 export type LoupePickResult = {
   sRGBHex: string
@@ -53,6 +47,10 @@ export type LoupeSessionOptions = {
   grid: boolean
   sampleSize: SampleSize
   className?: string
+  /** Replaces the hex label; the caller fills it. */
+  label?: HTMLElement
+  /** Called once per frame when the pixel under the loupe changes. */
+  onAim?: (result: LoupePickResult) => void
   signal?: AbortSignal
 }
 
@@ -64,13 +62,8 @@ export type LoupeSession = {
   cancel: () => void
 }
 
-/** How long the `12.5×` badge stays after the last zoom change. */
-const ZOOM_BADGE_MS = 1000
-const LABEL_GAP = 8
 /** Space between a finger and the loupe edge; the label sits in it. */
-const TOUCH_GAP = 48
-/** A touch that moves less than this (CSS px) counts as a tap. */
-const TAP_SLOP = 10
+export const TOUCH_GAP = 48
 
 const ARROWS: Record<string, Point> = {
   ArrowLeft: { x: -1, y: 0 },
@@ -124,9 +117,9 @@ export const startLoupeSession = (
   /** Client point the loupe is centered on. */
   let anchor = sourcePixelToClient(pixel.x, pixel.y, rect, srcWidth, srcHeight)
   let frame = 0
-  let badgeTimer: ReturnType<typeof setTimeout> | undefined
-  let lastHex = ''
   let lastCursor = ''
+  /** Last pixel sent to `onAim`. */
+  let lastAim = ''
   /** True once the user aimed with a pointer move or a key. */
   let aimed = false
 
@@ -144,54 +137,21 @@ export const startLoupeSession = (
     userSelect: 'none',
   })
 
-  const loupe = doc.createElement('div')
-  if (options.className) loupe.className = options.className
-  Object.assign(loupe.style, {
-    position: 'absolute',
-    left: '0',
-    top: '0',
-    width: `${size}px`,
-    pointerEvents: 'none',
-    willChange: 'transform',
+  const view = createLoupeView(doc, buffer, {
+    size,
+    shape: options.shape,
+    grid: options.grid,
+    sampleSize,
+    className: options.className,
+    label: options.label,
+    live: true,
   })
-
-  const canvas = doc.createElement('canvas')
-  Object.assign(canvas.style, {
-    display: 'block',
-    width: `${size}px`,
-    height: `${size}px`,
-    borderRadius: options.shape === 'circle' ? '50%' : '0',
-    boxShadow: '0 0 0 2px #fff, 0 2px 12px rgba(0, 0, 0, 0.35)',
-    // Checkerboard behind transparent pixels and outside the source.
-    background:
-      'repeating-conic-gradient(#ccc 0 25%, #fff 0 50%) 0 0 / 12px 12px',
-  })
-
-  const label = doc.createElement('div')
-  label.setAttribute('aria-live', 'polite')
-  Object.assign(label.style, {
-    width: 'max-content',
-    margin: `${LABEL_GAP}px auto 0`,
-    padding: '2px 8px',
-    borderRadius: '999px',
-    background: 'rgba(0, 0, 0, 0.75)',
-    color: '#fff',
-    font: '12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace',
-    whiteSpace: 'nowrap',
-  })
-  const hexText = doc.createElement('span')
-  const zoomText = doc.createElement('span')
-  zoomText.hidden = true
-  label.append(hexText, zoomText)
-  loupe.append(canvas, label)
-  overlay.append(loupe)
-
-  const ctx = canvas.getContext('2d')
-  if (!ctx) {
+  if (!view) {
     reject(new DOMException('2D canvas is not available', 'NotSupportedError'))
     return { result, setMagnification: () => {}, cancel: () => {} }
   }
-  const renderer = createLoupeRenderer(ctx, buffer)
+  const loupe = view.element
+  overlay.append(loupe)
 
   // ── Drawing ──
   const draw = () => {
@@ -204,18 +164,14 @@ export const startLoupeSession = (
     }
     if (!pixel) return
 
-    loupe.style.transform = `translate(${anchor.x - size / 2}px, ${anchor.y - size / 2}px)`
-    renderer.draw(pixel, {
-      size,
-      magnification,
-      devicePixelRatio: win.devicePixelRatio || 1,
-      grid: options.grid,
-      sampleSize,
-    })
-    const hex = colorAt(pixel)
-    if (hex !== lastHex) {
-      lastHex = hex
-      hexText.textContent = hex
+    view.render(pixel, anchor, magnification)
+    if (options.onAim) {
+      const r = pickResult(pixel)
+      const key = `${r.x},${r.y},${r.sRGBHex}`
+      if (key !== lastAim) {
+        lastAim = key
+        options.onAim(r)
+      }
     }
   }
 
@@ -223,20 +179,17 @@ export const startLoupeSession = (
     if (!frame && !settled) frame = win.requestAnimationFrame(draw)
   }
 
-  const colorAt = (p: Point): string => {
-    const c = samplePixel(buffer, p.x, p.y, sampleSize)
-    return c ? rgbToHex(c) : '#000000'
-  }
+  const pickResult = (p: Point): LoupePickResult => ({
+    sRGBHex: pixelHex(buffer, p, sampleSize),
+    x: p.x,
+    y: p.y,
+    mode: 'loupe',
+  })
 
   // ── State changes ──
   const showMagnification = (value: number) => {
     magnification = value
-    zoomText.textContent = ` · ${formatMagnification(value)}`
-    zoomText.hidden = false
-    clearTimeout(badgeTimer)
-    badgeTimer = setTimeout(() => {
-      zoomText.hidden = true
-    }, ZOOM_BADGE_MS)
+    view.showMagnification(value)
     schedule()
   }
 
@@ -264,7 +217,7 @@ export const startLoupeSession = (
     settled = true
     listeners.abort()
     if (frame) win.cancelAnimationFrame(frame)
-    clearTimeout(badgeTimer)
+    view.destroy()
     overlay.remove()
     previousFocus?.focus?.()
   }
@@ -272,7 +225,7 @@ export const startLoupeSession = (
   const confirm = (p: Point) => {
     if (settled) return
     finish()
-    resolve({ sRGBHex: colorAt(p), x: p.x, y: p.y, mode: 'loupe' })
+    resolve(pickResult(p))
   }
 
   const cancel = () => {
@@ -288,75 +241,28 @@ export const startLoupeSession = (
   // ── Touch ──
   // One finger: the loupe sits above it, drag to aim, lift to confirm.
   // Two fingers: pinch zooms. A gesture that pinched never confirms.
-  const touches = new Map<number, Point>()
-  let pinch: { distance: number; magnification: number } | null = null
-  let pinched = false
-  let touchStart: Point | null = null
-  let touchMoved = false
-
-  const fingerDistance = () => {
-    const [a, b] = touches.values()
-    return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0
-  }
-
-  const aimTouch = (x: number, y: number) => {
-    pixel = pixelAt(x, y)
-    anchor = touchLoupeCenter(x, y, size, TOUCH_GAP)
-    aimed = true
-    schedule()
-  }
-
-  const onTouchDown = (e: PointerEvent) => {
-    touches.set(e.pointerId, { x: e.clientX, y: e.clientY })
-    if (touches.size === 1) {
-      pinched = false
-      touchMoved = false
-      touchStart = { x: e.clientX, y: e.clientY }
-      aimTouch(e.clientX, e.clientY)
-    } else if (touches.size === 2) {
-      pinch = { distance: fingerDistance(), magnification }
-      pinched = true
-    }
-  }
-
-  const onTouchMove = (e: PointerEvent) => {
-    if (!touches.has(e.pointerId)) return
-    touches.set(e.pointerId, { x: e.clientX, y: e.clientY })
-    if (pinch) {
-      zoomTo(
-        pinchMagnification(
-          pinch.magnification,
-          pinch.distance,
-          fingerDistance(),
-          config
-        )
-      )
-    } else if (!pinched) {
-      if (
-        touchStart &&
-        Math.hypot(e.clientX - touchStart.x, e.clientY - touchStart.y) >
-          TAP_SLOP
-      ) {
-        touchMoved = true
-      }
-      aimTouch(e.clientX, e.clientY)
-    }
-  }
-
-  const onTouchUp = (e: PointerEvent) => {
-    if (!touches.delete(e.pointerId)) return
-    if (touches.size < 2) pinch = null
-    if (touches.size > 0 || pinched || e.type === 'pointercancel') return
-    const p = pixelAt(e.clientX, e.clientY)
-    if (p) confirm(pixel ?? p)
-    // Tap outside cancels; a drag that ends outside keeps the loupe open.
-    else if (!touchMoved) cancel()
-  }
+  const touch = createTouchTracker(() => magnification, {
+    aim: (x, y) => {
+      pixel = pixelAt(x, y)
+      anchor = touchLoupeCenter(x, y, size, TOUCH_GAP)
+      aimed = true
+      schedule()
+    },
+    pinch: (start, startDistance, distance) =>
+      zoomTo(pinchMagnification(start, startDistance, distance, config)),
+    end: (x, y, { tap, pinched, cancelled }) => {
+      if (pinched || cancelled) return
+      const p = pixelAt(x, y)
+      if (p) confirm(pixel ?? p)
+      // Tap outside cancels; a drag that ends outside keeps the loupe open.
+      else if (tap) cancel()
+    },
+  })
 
   overlay.addEventListener(
     'pointerdown',
     (e) => {
-      if (e.pointerType === 'touch') onTouchDown(e)
+      if (e.pointerType === 'touch') touch.down(e)
     },
     passive
   )
@@ -364,7 +270,7 @@ export const startLoupeSession = (
   overlay.addEventListener(
     'pointermove',
     (e) => {
-      if (e.pointerType === 'touch') return onTouchMove(e)
+      if (e.pointerType === 'touch') return touch.move(e)
       anchor = { x: e.clientX, y: e.clientY }
       pixel = pixelAt(e.clientX, e.clientY)
       aimed = true
@@ -377,7 +283,7 @@ export const startLoupeSession = (
     overlay.addEventListener(
       type,
       (e) => {
-        if (e.pointerType === 'touch') onTouchUp(e)
+        if (e.pointerType === 'touch') touch.up(e)
       },
       passive
     )

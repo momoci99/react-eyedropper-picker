@@ -240,6 +240,44 @@ input[type='range'] {
   accent-color: var(--accent);
 }
 
+.hint {
+  font-size: 13px;
+  color: var(--muted);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+/* Custom loupe label (renderLabel). Rendered in the loupe, outside .page. */
+.loupe-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 4px;
+  border-radius: 999px;
+  background: rgba(9, 9, 11, 0.85);
+  color: #fafafa;
+  font:
+    600 12px/1.4 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.loupe-label-swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+}
+
+.loupe-label-xy {
+  font-weight: 400;
+  color: #a1a1aa;
+}
+
 /* ── Results ── */
 
 .result {

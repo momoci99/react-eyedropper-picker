@@ -1,20 +1,21 @@
+import { useRef, useState, type ChangeEvent, type DragEvent } from 'react'
 import {
-  useCallback,
-  useRef,
-  useState,
-  type ChangeEvent,
-  type DragEvent,
-} from 'react'
-import {
+  ImageColorPicker,
   useLoupeEyeDropper,
+  type LoupePickResult,
   type LoupeShape,
   type PickResult,
-  type PickSource,
   type SampleSize,
 } from 'react-eyedropper-picker/loupe'
-import { drawColorField, drawPixelArt } from './samples'
+import { drawColorField, drawPixelArt, toDataUrl } from './samples'
 
 type SampleId = 'pixel' | 'field' | 'upload'
+type Mode = 'hover' | 'open'
+
+const MODES: { id: Mode; label: string }[] = [
+  { id: 'hover', label: 'Hover · ImageColorPicker' },
+  { id: 'open', label: 'Click to open · useLoupeEyeDropper' },
+]
 
 const SAMPLES: { id: SampleId; label: string }[] = [
   { id: 'pixel', label: 'Pixel art' },
@@ -40,9 +41,30 @@ const formatZoom = (m: number) => `${Math.round(m * 10) / 10}×`
 const isAbort = (e: unknown) =>
   e instanceof DOMException && e.name === 'AbortError'
 
+const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e))
+
+const customLabel = (c: LoupePickResult) => (
+  <span className="loupe-label">
+    <span className="loupe-label-swatch" style={{ background: c.sRGBHex }} />
+    {c.sRGBHex}
+    <span className="loupe-label-xy">
+      {c.x}, {c.y}
+    </span>
+  </span>
+)
+
+const sampleClass = (id: SampleId) =>
+  id === 'pixel' ? 'source pixelated' : 'source'
+
 type Props = { onPick: (hex: string) => void }
 
 export const LoupeDemo = ({ onPick }: Props) => {
+  // Client-only demo: drawing in the initializer is fine.
+  const [samples] = useState(() => ({
+    pixel: toDataUrl(drawPixelArt),
+    field: toDataUrl(drawColorField),
+  }))
+  const [mode, setMode] = useState<Mode>('hover')
   const [sample, setSample] = useState<SampleId>('pixel')
   const [uploadUrl, setUploadUrl] = useState<string | null>(null)
   const [magnification, setMagnification] = useState(8)
@@ -51,52 +73,46 @@ export const LoupeDemo = ({ onPick }: Props) => {
   const [shape, setShape] = useState<LoupeShape>('circle')
   const [size, setSize] = useState(120)
   const [grid, setGrid] = useState(true)
+  const [fancyLabel, setFancyLabel] = useState(false)
   const [history, setHistory] = useState<PickResult[]>([])
   const [error, setError] = useState<string | null>(null)
 
-  const sourceRef = useRef<PickSource | null>(null)
-  const attachPixelArt = useCallback((el: HTMLCanvasElement | null) => {
-    sourceRef.current = el
-    if (el) drawPixelArt(el)
-  }, [])
-  const attachColorField = useCallback((el: HTMLCanvasElement | null) => {
-    sourceRef.current = el
-    if (el) drawColorField(el)
-  }, [])
-  const attachImage = useCallback((el: HTMLImageElement | null) => {
-    sourceRef.current = el
-  }, [])
+  const imageRef = useRef<HTMLImageElement | null>(null)
 
-  const { open, isOpen } = useLoupeEyeDropper({
-    source: sourceRef,
-    loupe: {
-      magnification,
-      onMagnificationChange: setMagnification,
-      maxMagnification: MAX_MAGNIFICATION,
-      magnificationSteps: useSteps ? STEPS : undefined,
-      sampleSize,
-      shape,
-      size,
-      grid,
-    },
-  })
+  const loupe = {
+    magnification,
+    onMagnificationChange: setMagnification,
+    maxMagnification: MAX_MAGNIFICATION,
+    magnificationSteps: useSteps ? STEPS : undefined,
+    sampleSize,
+    shape,
+    size,
+    grid,
+  }
+  const { open, isOpen } = useLoupeEyeDropper({ source: imageRef, loupe })
+
+  const record = (result: PickResult) => {
+    setError(null)
+    setHistory((h) =>
+      [result, ...h.filter((r) => r.sRGBHex !== result.sRGBHex)].slice(
+        0,
+        HISTORY_LIMIT
+      )
+    )
+    onPick(result.sRGBHex)
+  }
 
   const pick = async () => {
-    if (!sourceRef.current) return
+    if (!imageRef.current) return
     setError(null)
     try {
-      const result = await open()
-      setHistory((h) =>
-        [result, ...h.filter((r) => r.sRGBHex !== result.sRGBHex)].slice(
-          0,
-          HISTORY_LIMIT
-        )
-      )
-      onPick(result.sRGBHex)
+      record(await open())
     } catch (e) {
-      if (!isAbort(e)) setError(e instanceof Error ? e.message : String(e))
+      if (!isAbort(e)) setError(errorText(e))
     }
   }
+
+  const src = sample === 'upload' ? uploadUrl : samples[sample]
 
   const loadFile = (file: File | undefined) => {
     if (!file?.type.startsWith('image/')) return
@@ -129,6 +145,19 @@ export const LoupeDemo = ({ onPick }: Props) => {
 
       <div className="loupe-layout">
         <div className="stage-column">
+          <div className="segmented" role="radiogroup" aria-label="Mode">
+            {MODES.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                role="radio"
+                aria-checked={mode === m.id}
+                onClick={() => setMode(m.id)}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
           <div className="segmented" role="radiogroup" aria-label="Sample">
             {SAMPLES.map((s) => (
               <button
@@ -152,28 +181,33 @@ export const LoupeDemo = ({ onPick }: Props) => {
             className="stage"
             onDragOver={(e) => e.preventDefault()}
             onDrop={onDrop}
-            onClick={pick}
-            title="Click to pick a color"
+            onClick={mode === 'open' ? pick : undefined}
+            title={mode === 'open' ? 'Click to pick a color' : undefined}
           >
-            {sample === 'pixel' && (
-              <canvas
-                key="pixel"
-                ref={attachPixelArt}
-                className="source pixelated"
-              />
-            )}
-            {sample === 'field' && (
-              <canvas key="field" ref={attachColorField} className="source" />
-            )}
-            {sample === 'upload' && uploadUrl && (
-              <img
-                key={uploadUrl}
-                ref={attachImage}
-                src={uploadUrl}
-                alt="Uploaded"
-                className="source"
-              />
-            )}
+            {src &&
+              (mode === 'hover' ? (
+                <ImageColorPicker
+                  key={src}
+                  src={src}
+                  alt={SAMPLES.find((s) => s.id === sample)!.label}
+                  className={sampleClass(sample)}
+                  onPick={record}
+                  onPickError={(e) => setError(errorText(e))}
+                  loupe={{
+                    ...loupe,
+                    renderLabel: fancyLabel ? customLabel : undefined,
+                  }}
+                />
+              ) : (
+                <img
+                  key={src}
+                  ref={imageRef}
+                  src={src}
+                  alt={SAMPLES.find((s) => s.id === sample)!.label}
+                  className={sampleClass(sample)}
+                  draggable={false}
+                />
+              ))}
           </div>
           <p className="muted small">
             Drop an image on the stage to use it. Images stay in your browser.
@@ -181,14 +215,20 @@ export const LoupeDemo = ({ onPick }: Props) => {
         </div>
 
         <div className="controls-column">
-          <button
-            type="button"
-            className="primary"
-            onClick={pick}
-            aria-busy={isOpen}
-          >
-            {isOpen ? 'Picking…' : 'Pick from image'}
-          </button>
+          {mode === 'open' ? (
+            <button
+              type="button"
+              className="primary"
+              onClick={pick}
+              aria-busy={isOpen}
+            >
+              {isOpen ? 'Picking…' : 'Pick from image'}
+            </button>
+          ) : (
+            <p className="hint">
+              Hover the image and click. On touch, press and drag, then lift.
+            </p>
+          )}
 
           <div className="result" aria-live="polite">
             <div
@@ -293,6 +333,17 @@ export const LoupeDemo = ({ onPick }: Props) => {
               />
               Pixel grid (hidden below 4× automatically)
             </label>
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={fancyLabel}
+                disabled={mode !== 'hover'}
+                onChange={(e) => setFancyLabel(e.target.checked)}
+              />
+              <span>
+                Custom label (<code>renderLabel</code>, hover mode)
+              </span>
+            </label>
           </fieldset>
 
           {history.length > 0 && (
@@ -317,14 +368,33 @@ export const LoupeDemo = ({ onPick }: Props) => {
           <details className="keys">
             <summary>Controls</summary>
             <dl>
-              <dt>Move / click</dt>
-              <dd>Aim / pick</dd>
-              <dt>Wheel</dt>
-              <dd>Zoom</dd>
-              <dt>Drag / lift</dt>
-              <dd>Aim / pick (touch)</dd>
-              <dt>Pinch</dt>
-              <dd>Zoom (touch)</dd>
+              {mode === 'hover' ? (
+                <>
+                  <dt>Hover / click</dt>
+                  <dd>Aim / pick, again and again</dd>
+                  <dt>Wheel</dt>
+                  <dd>Zoom (over the image only)</dd>
+                  <dt>Drag / lift</dt>
+                  <dd>Aim / pick (touch)</dd>
+                  <dt>Pinch</dt>
+                  <dd>Zoom (touch, both fingers on the image)</dd>
+                  <dt>
+                    <kbd>Tab</kbd> <kbd>Enter</kbd>
+                  </dt>
+                  <dd>Focus the image, open the keyboard loupe</dd>
+                </>
+              ) : (
+                <>
+                  <dt>Move / click</dt>
+                  <dd>Aim / pick</dd>
+                  <dt>Wheel</dt>
+                  <dd>Zoom</dd>
+                  <dt>Drag / lift</dt>
+                  <dd>Aim / pick (touch)</dd>
+                  <dt>Pinch</dt>
+                  <dd>Zoom (touch)</dd>
+                </>
+              )}
               <dt>
                 <kbd>←</kbd> <kbd>↑</kbd> <kbd>→</kbd> <kbd>↓</kbd>
               </dt>

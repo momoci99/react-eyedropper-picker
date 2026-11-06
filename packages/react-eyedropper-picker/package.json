@@ -56,7 +56,8 @@
   "author": "momoci99",
   "license": "MIT",
   "peerDependencies": {
-    "react": ">=19.2"
+    "react": ">=19.2",
+    "react-dom": ">=19.2"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.2",
