@@ -66,6 +66,37 @@ const { sRGBHex } = await open() // rejects with AbortError on cancel/close
 
 `react-eyedropper-picker/loupe` adds a pixel-accurate magnifier that works in every browser. It is a separate entry, so apps that only use the base entry don't bundle it.
 
+The loupe entry needs `react-dom` (for `renderLabel`). The base entry does not.
+
+#### `ImageColorPicker`
+
+An `<img>` you pick colors from. Hover to magnify, click to pick. The page stays usable, and you can pick again and again.
+
+```tsx
+import { ImageColorPicker } from 'react-eyedropper-picker/loupe'
+
+<ImageColorPicker
+  src="/photo.jpg"
+  alt="Sunset"
+  onPick={({ sRGBHex, x, y }) => console.log(sRGBHex, x, y)}
+  loupe={{
+    defaultMagnification: 10,
+    sampleSize: 3,
+    renderLabel: ({ sRGBHex }) => <span>{sRGBHex}</span>,
+  }}
+/>
+```
+
+- Mouse: hover to aim, click to pick, wheel to zoom (only while over the image, so the page still scrolls elsewhere).
+- Touch: press and drag on the image, lift to pick, pinch with both fingers on the image to zoom. Touches on the image don't scroll the page.
+- Keyboard: Tab to the image, Enter or Space opens the full-screen loupe (keys below).
+- Takes every `<img>` prop. `loupe` takes the options below plus `renderLabel(color)`, which replaces the hex label under the loupe.
+- `onPickError` gets read errors, such as `SecurityError` for a cross-origin image without CORS. Default: `console.error`.
+
+#### `useLoupeEyeDropper`
+
+Picks once from an image or canvas, like the native EyeDropper: call `open()`, get a promise. The loupe covers the page until you pick or cancel.
+
 ```tsx
 import { useRef } from 'react'
 import { useLoupeEyeDropper } from 'react-eyedropper-picker/loupe'

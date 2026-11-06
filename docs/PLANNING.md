@@ -306,6 +306,10 @@ declare function useLoupeEyeDropper(options?: UseLoupeEyeDropperOptions): {
 
 - 기본 경로 `useEyeDropper()`는 v0.1과 같은 사용법을 유지한다.
 - Loupe 훅은 확대경을 `document.body`에 plain DOM overlay로 그린다 (2026-11-05 결정). `react-dom` peer 없이 위 반환값 그대로 유지한다. 그래서 `renderLabel`(ReactNode)은 훅이 아니라 `ImageColorPicker`에서 지원하고, 훅은 hex 텍스트 라벨을 쓴다.
+- `ImageColorPicker` 결정 (2026-11-06):
+  - `renderLabel`은 `createPortal`로 확대경 라벨 자리에 그린다. 그래서 `react-dom`을 peer(`>=19.2`)로 둔다. 기본 경로는 `react-dom`을 import하지 않는다.
+  - 조작은 hover 즉시 확대다. overlay 없이 마우스를 올리면 확대경이 따라오고, 클릭할 때마다 뽑는다. 터치는 이미지 위에서 누르고 끌다가 떼면 뽑는다(이미지 위 스크롤은 막힘). 키보드는 이미지에 focus 후 Enter/Space로 기존 full-screen loupe를 연다.
+  - 휠 확대는 확대경이 보일 때(이미지 위)만 동작한다. 다른 곳에서는 페이지가 스크롤된다.
 - `isSupported` 의미: 기본 훅은 "순정 지원 여부", Loupe 훅은 "현재 모드 기준". 훅이 나뉘어 의미가 섞이지 않는다.
 - `open()` 실패는 순정 API와 같은 방식(`AbortError`, `NotSupportedError`)으로 reject한다.
   - 현재 v0.1 코드는 미지원 시 일반 `Error`를 던진다. v0.2에서 `DOMException('...', 'NotSupportedError')`로 바꾼다. 미배포라 호환성 부담 없음.

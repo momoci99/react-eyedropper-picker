@@ -18,6 +18,7 @@ import {
   type LoupeSession,
   type LoupeShape,
 } from './session'
+import { DEFAULT_LOUPE_SIZE } from './view'
 
 export type PickMode = 'auto' | 'native' | 'loupe'
 
@@ -80,8 +81,6 @@ export type UseLoupeEyeDropperResult = {
   isSupported: boolean
   isOpen: boolean
 }
-
-const DEFAULT_SIZE = 120
 
 const notSupported = (message: string) =>
   new DOMException(message, 'NotSupportedError')
@@ -179,7 +178,7 @@ export const useLoupeEyeDropper = (
           controlled: loupe.magnification !== undefined,
           onMagnificationChange: (value) =>
             latest.current.loupe?.onMagnificationChange?.(value),
-          size: loupe.size ?? DEFAULT_SIZE,
+          size: loupe.size ?? DEFAULT_LOUPE_SIZE,
           shape: loupe.shape ?? 'circle',
           grid: loupe.grid ?? true,
           sampleSize: loupe.sampleSize ?? 1,

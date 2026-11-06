@@ -45,7 +45,10 @@ describe('ColorPicker', () => {
     render(<ColorPicker onChange={onChange} />)
     fireEvent.click(await screen.findByLabelText('Pick color from screen'))
     await vi.waitFor(() => expect(onChange).toHaveBeenCalledWith('#abcdef'))
-    expect(screen.getByLabelText('Hex color')).toHaveValue('#abcdef')
+    // The re-render can land after onChange under load.
+    await vi.waitFor(() =>
+      expect(screen.getByLabelText('Hex color')).toHaveValue('#abcdef')
+    )
   })
 
   it('follows controlled value', () => {
