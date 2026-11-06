@@ -2,7 +2,9 @@ import { act, renderHook } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useEyeDropper } from '../src/hooks/useEyeDropper'
 
-const installEyeDropper = (impl: (opts: { signal: AbortSignal }) => Promise<{ sRGBHex: string }>) => {
+const installEyeDropper = (
+  impl: (opts: { signal: AbortSignal }) => Promise<{ sRGBHex: string }>
+) => {
   const open = vi.fn(impl)
   ;(window as any).EyeDropper = class {
     open = open

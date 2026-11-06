@@ -33,7 +33,11 @@ export const hexToRgb = (hex: string): RGB | null => {
 export const rgbToHex = ({ r, g, b }: RGB): string =>
   '#' +
   [r, g, b]
-    .map((c) => Math.round(clamp(c, 0, 255)).toString(16).padStart(2, '0'))
+    .map((c) =>
+      Math.round(clamp(c, 0, 255))
+        .toString(16)
+        .padStart(2, '0')
+    )
     .join('')
 
 export const rgbToHsv = ({ r, g, b }: RGB): HSV => {

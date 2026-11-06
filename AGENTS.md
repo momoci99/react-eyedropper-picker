@@ -22,10 +22,10 @@ pnpm dev          # demo at http://localhost:5173
 pnpm test         # vitest run (library)
 pnpm typecheck    # all workspaces
 pnpm build        # build library to packages/react-eyedropper-picker/dist
-pnpm format       # prettier
+pnpm format       # prettier (format:check in CI)
 ```
 
-Run `pnpm typecheck && pnpm test` before considering a change done.
+Run `pnpm format && pnpm typecheck && pnpm test` before considering a change done.
 
 ## Conventions
 
