@@ -10,10 +10,11 @@
     "dev": "pnpm -C apps/demo dev",
     "dev:host": "pnpm -C apps/demo dev:host",
     "build:demo": "pnpm build && pnpm -C apps/demo build",
+    "size": "pnpm -C packages/react-eyedropper-picker size",
     "e2e": "pnpm -C apps/demo e2e",
     "e2e:install": "pnpm -C apps/demo e2e:install",
-    "format": "prettier --write \"{packages,apps}/*/{src,tests,e2e}/**/*.{ts,tsx,css}\"",
-    "format:check": "prettier --check \"{packages,apps}/*/{src,tests,e2e}/**/*.{ts,tsx,css}\""
+    "format": "prettier --write \"{packages,apps}/*/{src,tests,e2e,scripts}/**/*.{ts,tsx,css,mjs}\"",
+    "format:check": "prettier --check \"{packages,apps}/*/{src,tests,e2e,scripts}/**/*.{ts,tsx,css,mjs}\""
   },
   "devDependencies": {
     "prettier": "^3.9.10",
