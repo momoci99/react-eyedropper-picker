@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes } from 'react'
+import { themeVar } from '../theme'
 
 export type EyeDropperButtonProps = ButtonHTMLAttributes<HTMLButtonElement>
 
@@ -36,7 +37,7 @@ export const EyeDropperButton = ({
       width: 32,
       height: 32,
       padding: 0,
-      border: '1px solid rgba(0,0,0,.15)',
+      border: `1px solid ${themeVar('border')}`,
       borderRadius: 6,
       background: 'transparent',
       color: 'inherit',

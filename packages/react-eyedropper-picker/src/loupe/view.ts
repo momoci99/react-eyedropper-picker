@@ -124,7 +124,8 @@ export const createLoupeView = (
     width: `${size}px`,
     height: `${size}px`,
     borderRadius: options.shape === 'circle' ? '50%' : '0',
-    boxShadow: '0 0 0 2px #fff, 0 2px 12px rgba(0, 0, 0, 0.35)',
+    boxShadow:
+      '0 0 0 2px var(--rep-loupe-ring, #fff), 0 2px 12px var(--rep-loupe-shadow, rgba(0, 0, 0, 0.35))',
     // Checkerboard behind transparent pixels and outside the source.
     background:
       'repeating-conic-gradient(#ccc 0 25%, #fff 0 50%) 0 0 / 12px 12px',
@@ -137,6 +138,8 @@ export const createLoupeView = (
   const label = options.label ?? doc.createElement('div')
   const hexText = doc.createElement('span')
   const zoomText = doc.createElement('span')
+  /** Dot of the current color; fades between colors. */
+  const swatch = doc.createElement('span')
   if (options.label) {
     Object.assign(label.style, {
       width: 'max-content',
@@ -149,13 +152,23 @@ export const createLoupeView = (
       margin: `${LABEL_GAP}px auto 0`,
       padding: '2px 8px',
       borderRadius: '999px',
-      background: 'rgba(0, 0, 0, 0.75)',
-      color: '#fff',
+      background: 'var(--rep-label-bg, rgba(0, 0, 0, 0.75))',
+      color: 'var(--rep-label-fg, #fff)',
       font: '12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace',
       whiteSpace: 'nowrap',
     })
     zoomText.hidden = true
-    label.append(hexText, zoomText)
+    swatch.setAttribute('aria-hidden', 'true')
+    Object.assign(swatch.style, {
+      display: 'inline-block',
+      width: '10px',
+      height: '10px',
+      marginRight: '6px',
+      verticalAlign: '-1px',
+      borderRadius: '50%',
+      boxShadow: '0 0 0 1px rgba(255, 255, 255, 0.6)',
+    })
+    label.append(swatch, hexText, zoomText)
   }
   inner.append(canvas, label)
 
@@ -226,8 +239,14 @@ export const createLoupeView = (
         })
         const hex = pixelHex(buffer, pixel, sampleSize)
         if (hex !== lastHex) {
+          // Fade between colors, but not into the first one.
+          swatch.style.transition =
+            lastHex && animate && !reducedMotion()
+              ? 'background-color 120ms ease-out'
+              : 'none'
           lastHex = hex
           hexText.textContent = hex
+          swatch.style.backgroundColor = hex
         }
       }
       return moving

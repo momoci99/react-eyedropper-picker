@@ -7,6 +7,7 @@ import { SaturationPanel } from './SaturationPanel'
 import { HueSlider } from './HueSlider'
 import { EyeDropperButton } from './EyeDropperButton'
 import { normalizeHex } from '../utils/color'
+import { themeColorScheme, themeVar, type ColorPickerTheme } from '../theme'
 
 export type ColorPickerProps = UseColorPickerOptions & {
   /**
@@ -16,6 +17,11 @@ export type ColorPickerProps = UseColorPickerOptions & {
   showEyeDropper?: boolean
   /** Show the hex text input. Default true. */
   showInput?: boolean
+  /**
+   * `'light'` (default), `'dark'`, or `'auto'` to follow the OS setting.
+   * Colors can also be set with `--rep-*` CSS variables.
+   */
+  theme?: ColorPickerTheme
   className?: string
   style?: CSSProperties
 }
@@ -23,6 +29,7 @@ export type ColorPickerProps = UseColorPickerOptions & {
 export const ColorPicker = ({
   showEyeDropper = true,
   showInput = true,
+  theme = 'light',
   className,
   style,
   ...options
@@ -46,9 +53,10 @@ export const ColorPicker = ({
         width: 240,
         padding: 12,
         borderRadius: 10,
-        background: '#fff',
-        color: '#111',
-        boxShadow: '0 4px 16px rgba(0,0,0,.12)',
+        colorScheme: themeColorScheme(theme),
+        background: themeVar('bg', theme),
+        color: themeVar('fg', theme),
+        boxShadow: `0 4px 16px ${themeVar('shadow', theme)}`,
         fontFamily: 'system-ui, sans-serif',
         fontSize: 13,
         boxSizing: 'border-box',
@@ -66,7 +74,7 @@ export const ColorPicker = ({
             flexShrink: 0,
             borderRadius: 6,
             background: hex,
-            boxShadow: 'inset 0 0 0 1px rgba(0,0,0,.15)',
+            boxShadow: `inset 0 0 0 1px ${themeVar('border', theme)}`,
           }}
         />
         {showInput && (
@@ -84,8 +92,10 @@ export const ColorPicker = ({
               minWidth: 0,
               height: 32,
               padding: '0 8px',
-              border: '1px solid rgba(0,0,0,.15)',
+              border: `1px solid ${themeVar('border', theme)}`,
               borderRadius: 6,
+              background: themeVar('input-bg', theme),
+              color: 'inherit',
               font: 'inherit',
               fontFamily: 'ui-monospace, monospace',
               boxSizing: 'border-box',
@@ -95,6 +105,7 @@ export const ColorPicker = ({
         {showEyeDropper && isEyeDropperSupported && (
           <EyeDropperButton
             onClick={() => void pickFromScreen()}
+            style={{ borderColor: themeVar('border', theme) }}
             // A custom eye dropper (e.g. the loupe) may not pick from the screen.
             {...(options.eyeDropper && {
               'aria-label': 'Pick a color',

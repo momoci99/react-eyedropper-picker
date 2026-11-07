@@ -31,8 +31,34 @@ function App() {
 | `showEyeDropper` | `boolean`               | `true`      | Show eye dropper button (when supported)      |
 | `eyeDropper`     | `EyeDropperLike`        | native      | Picker behind the button (see Loupe)          |
 | `showInput`      | `boolean`               | `true`      | Show hex input                                |
+| `theme`          | `'light' \| 'dark' \| 'auto'` | `'light'` | `'auto'` follows the OS (see Theming) |
 | `className`      | `string`                | –           | Root class name                               |
 | `style`          | `CSSProperties`         | –           | Root inline style (merged with defaults)      |
+
+### Theming
+
+`theme="dark"` switches to dark colors; `theme="auto"` follows the user's OS setting with CSS `light-dark()`, so it's right on the first paint, server rendering included. Every color is also a CSS variable you can set anywhere above the picker (`:root`, a wrapper class):
+
+```css
+:root {
+  --rep-bg: #fdf6e3;
+  --rep-fg: #073642;
+}
+```
+
+| Variable             | Used for                         | Light / dark default                        |
+| -------------------- | -------------------------------- | ------------------------------------------- |
+| `--rep-bg`           | Picker background                | `#fff` / `#1f1f23`                          |
+| `--rep-fg`           | Picker text                      | `#111` / `#f2f2f5`                          |
+| `--rep-border`       | Input, button and swatch borders | `rgba(0,0,0,.15)` / `rgba(255,255,255,.18)` |
+| `--rep-input-bg`     | Hex input background             | `#fff` / `#2a2a30`                          |
+| `--rep-shadow`       | Picker shadow color              | `rgba(0,0,0,.12)` / `rgba(0,0,0,.5)`        |
+| `--rep-loupe-ring`   | Ring around the loupe            | `#fff`                                      |
+| `--rep-loupe-shadow` | Loupe shadow color               | `rgba(0,0,0,.35)`                           |
+| `--rep-label-bg`     | Hex label under the loupe        | `rgba(0,0,0,.75)`                           |
+| `--rep-label-fg`     | Hex label text                   | `#fff`                                      |
+
+The loupe is added to `<body>`, so set its variables on `:root` (or pass `loupe.className`).
 
 ### Headless hook
 
@@ -192,7 +218,7 @@ useLoupeEyeDropper({
 
 ## Browser support
 
-The picker works everywhere. By default the eye dropper button only appears where the EyeDropper API exists (Chromium-based browsers: Chrome, Edge, Opera). With a loupe `eyeDropper` it appears in every browser.
+The picker works everywhere. `theme="auto"` needs CSS `light-dark()` (Chrome 123, Safari 17.5, Firefox 120); older browsers should use `'light'` or `'dark'`. By default the eye dropper button only appears where the EyeDropper API exists (Chromium-based browsers: Chrome, Edge, Opera). With a loupe `eyeDropper` it appears in every browser.
 
 ## Credits
 
