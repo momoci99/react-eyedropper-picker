@@ -44,6 +44,7 @@ Run `pnpm format && pnpm typecheck && pnpm test` before considering a change don
 - `sideEffects: false`: no top-level side effects in `src/`.
 - EyeDropper API is not available everywhere (Chromium only, not in jsdom). Guard with `isEyeDropperSupported`; mock it in tests.
 - Changes to `src/index.ts` exports are public API changes; call them out.
+- READMEs (root and package) are bilingual: each English paragraph or list is followed by its Korean version, headings read `English · 한국어`, table descriptions add Korean after `<br>`. Code blocks stay single. When you change a README, update both languages. Never touch the personal P.S. at the end of the root README.
 
 ## React best practices
 
