@@ -40,6 +40,10 @@ jobs:
       - name: Build library and demo
         run: pnpm build:demo
 
+      # Minified + gzip size per entry; fails over budget (scripts/size.mjs).
+      - name: Bundle size
+        run: pnpm size
+
       # npm tarball must contain only the files whitelist (no agent files).
       - name: Check npm tarball contents
         working-directory: packages/react-eyedropper-picker

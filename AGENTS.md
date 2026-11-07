@@ -25,12 +25,13 @@ pnpm dev:host     # same, also on the LAN: open the "Network" URL on a phone
 pnpm test         # vitest run (library)
 pnpm typecheck    # all workspaces
 pnpm build        # build library to packages/react-eyedropper-picker/dist
+pnpm size         # after build: minified + gzip size per entry, fails over budget
 pnpm format       # prettier (format:check in CI)
 pnpm e2e          # Playwright against the demo (own server on :5199)
 pnpm e2e:install  # once: download Playwright's Chromium
 ```
 
-Run `pnpm format && pnpm typecheck && pnpm test` before considering a change done. For pointer, touch, loupe or demo changes, also run `pnpm e2e`. jsdom has no layout or real pixels, so e2e is where picked colors are checked against the image.
+Run `pnpm format && pnpm typecheck && pnpm test` before considering a change done. For library source changes, also `pnpm build && pnpm size`: budgets live in `packages/react-eyedropper-picker/scripts/size.mjs`; raise one only on purpose and say why in the PR. For pointer, touch, loupe or demo changes, also run `pnpm e2e`. jsdom has no layout or real pixels, so e2e is where picked colors are checked against the image.
 
 ## Conventions
 
