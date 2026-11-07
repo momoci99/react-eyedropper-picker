@@ -14,6 +14,7 @@ import {
   mockCanvas,
   mockFrames,
   mockSource,
+  mockVideo,
   wheel,
   loupeLabel,
 } from './loupe-mocks'
@@ -103,6 +104,36 @@ describe('useLoupeEyeDropper', () => {
       x: 3,
       y: 4,
       mode: 'loupe',
+    })
+    expect(result.current.isOpen).toBe(false)
+  })
+
+  it('picks from the current video frame and freezes it while open', async () => {
+    const video = mockVideo()
+    const { result } = render({ source: video })
+    const pending = openLoupe(result)
+    const frozen = getOverlay()!.firstElementChild!
+    expect(frozen.querySelector('canvas')).not.toBeNull()
+    await act(async () => {
+      click(35, 45)
+    })
+    await expect(pending).resolves.toMatchObject({ sRGBHex: gridHex(3, 4) })
+    expect(frozen.isConnected).toBe(false)
+  })
+
+  it('does not freeze an image or canvas', () => {
+    const { result } = render({ source: mockSource() })
+    openLoupe(result)
+    expect(
+      getOverlay()!.querySelector('div > canvas[style*="absolute"]')
+    ).toBeNull()
+    act(() => result.current.close())
+  })
+
+  it('rejects with InvalidStateError for a video without a frame', async () => {
+    const { result } = render({ source: mockVideo(10, 10, 100, 100, 1) })
+    await expect(openLoupe(result)).rejects.toMatchObject({
+      name: 'InvalidStateError',
     })
     expect(result.current.isOpen).toBe(false)
   })

@@ -99,6 +99,24 @@ describe('attachLoupeHover', () => {
     expect(source.style.cursor).toBe('none')
   })
 
+  it('maps through object-fit', () => {
+    // 10x10 pixels, contain in a 100x100 box shown 200x100: x 50..150.
+    vi.mocked(source.getBoundingClientRect).mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 200,
+      height: 100,
+    } as DOMRect)
+    source.style.objectFit = 'contain'
+    attach()
+    hoverAt(85, 45)
+    frames.flush()
+    expect(labelText()).toBe(gridHex(3, 4))
+    hoverAt(20, 45)
+    frames.flush()
+    expect(loupe()!.style.display).toBe('none')
+  })
+
   it('moves the loupe above a visible cursor', () => {
     attach({ cursor: 'copy' })
     hoverAt(35, 45)

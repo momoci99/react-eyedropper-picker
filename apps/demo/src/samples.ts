@@ -120,3 +120,49 @@ export const toDataUrl = (draw: (canvas: HTMLCanvasElement) => void) => {
   draw(canvas)
   return canvas.toDataURL('image/png')
 }
+
+/** Video sample: 16:9 frames, 10 CSS px per pixel-art pixel. */
+const VIDEO_SCALE = 10
+const VIDEO_WIDTH = 480
+const VIDEO_HEIGHT = 270
+/** Video pixels scrolled per second. */
+const VIDEO_SPEED = 60
+
+/**
+ * Plays the pixel art scrolling sideways in `video`, from a canvas stream:
+ * no video file, same origin. Returns a cleanup function.
+ */
+export const playPixelArtVideo = (video: HTMLVideoElement) => {
+  const art = document.createElement('canvas')
+  drawPixelArt(art)
+  const canvas = document.createElement('canvas')
+  canvas.width = VIDEO_WIDTH
+  canvas.height = VIDEO_HEIGHT
+  const ctx = canvas.getContext('2d')
+  if (!ctx || !canvas.captureStream) return () => {}
+  ctx.imageSmoothingEnabled = false
+
+  const tile = art.width * VIDEO_SCALE
+  // Bottom of the art; the frame is shorter than the art.
+  const top = VIDEO_HEIGHT - art.height * VIDEO_SCALE
+  let raf = 0
+  const draw = (now: number) => {
+    // Whole video pixels, so art pixels keep sharp edges while it glides.
+    const shift = Math.floor((now / 1000) * VIDEO_SPEED) % tile
+    for (let x = -shift; x < VIDEO_WIDTH; x += tile) {
+      ctx.drawImage(art, x, top, tile, art.height * VIDEO_SCALE)
+    }
+    raf = requestAnimationFrame(draw)
+  }
+  draw(performance.now())
+
+  // No frame rate: a new frame each time the canvas changes (every rAF).
+  const stream = canvas.captureStream()
+  video.srcObject = stream
+  video.play().catch(() => {})
+  return () => {
+    cancelAnimationFrame(raf)
+    for (const track of stream.getTracks()) track.stop()
+    video.srcObject = null
+  }
+}

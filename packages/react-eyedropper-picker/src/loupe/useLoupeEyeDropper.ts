@@ -13,7 +13,12 @@ import {
   resolveMagnificationConfig,
   type MagnificationOptions,
 } from './magnification'
-import { readPixels, type LoupeSource, type SampleSize } from './pixels'
+import {
+  isVideo,
+  readPixels,
+  type LoupeSource,
+  type SampleSize,
+} from './pixels'
 import {
   startLoupeSession,
   type LoupeSession,
@@ -24,7 +29,10 @@ import { DEFAULT_LOUPE_SIZE } from './view'
 
 export type PickMode = 'auto' | 'native' | 'loupe'
 
-/** What the loupe can pick from. */
+/**
+ * What the loupe can pick from. A `<video>` is picked from the frame showing
+ * when the loupe opens; that frame covers the video until it closes.
+ */
 export type PickSource = LoupeSource
 
 export type PickResult = {
@@ -222,6 +230,8 @@ export const useLoupeEyeDropper = (
           smoothing: loupe.smoothing,
           animate: loupe.animate,
           cursor: loupe.cursor,
+          // A playing video moves on; show the frame being picked from.
+          freeze: isVideo(source),
           feedback,
           signal: openOptions.signal,
         })

@@ -4,7 +4,9 @@ import {
   clampPixel,
   clientToSourcePixel,
   computeCellLayout,
+  fitRect,
   isGridVisible,
+  parseObjectPosition,
   sourcePixelToClient,
   loupeCenterAbove,
 } from '../src/loupe/geometry'
@@ -177,5 +179,118 @@ describe('loupeCenterAbove', () => {
   it('flips below when there is no room at the top', () => {
     expect(loupeCenterAbove(100, 168, 120, 48)).toEqual({ x: 100, y: 60 })
     expect(loupeCenterAbove(100, 167, 120, 48)).toEqual({ x: 100, y: 275 })
+  })
+})
+
+describe('clientToSourcePixel clip', () => {
+  it('returns null outside the visible box', () => {
+    // object-fit: cover: 200x100 picture in a 100x100 box, centered.
+    const rect = { left: -50, top: 0, width: 200, height: 100 }
+    const box = { left: 0, top: 0, width: 100, height: 100 }
+    expect(clientToSourcePixel(10, 10, rect, 20, 10, box)).toEqual({
+      x: 6,
+      y: 1,
+    })
+    expect(clientToSourcePixel(-10, 10, rect, 20, 10, box)).toBeNull()
+    expect(clientToSourcePixel(100, 10, rect, 20, 10, box)).toBeNull()
+  })
+})
+
+describe('parseObjectPosition', () => {
+  const axes = (v: string) =>
+    parseObjectPosition(v).map((a) => [a.fraction, a.px])
+
+  it('reads computed values: %, px and calc()', () => {
+    expect(axes('50% 50%')).toEqual([
+      [0.5, 0],
+      [0.5, 0],
+    ])
+    expect(axes('0% 100%')).toEqual([
+      [0, 0],
+      [1, 0],
+    ])
+    expect(axes('10px 0px')).toEqual([
+      [0, 10],
+      [0, 0],
+    ])
+    expect(axes('calc(100% - 10px) calc(20% + 4px)')).toEqual([
+      [1, -10],
+      [0.2, 4],
+    ])
+  })
+
+  it('reads keywords', () => {
+    expect(axes('right bottom')).toEqual([
+      [1, 0],
+      [1, 0],
+    ])
+  })
+
+  it('centers anything else', () => {
+    for (const v of ['', 'calc(1em) 0%', '1em 2em', '0% 0% 0%']) {
+      expect(axes(v)).toEqual([
+        [0.5, 0],
+        [0.5, 0],
+      ])
+    }
+  })
+})
+
+describe('fitRect', () => {
+  const box = { left: 10, top: 20, width: 200, height: 100 }
+  const fit = (w: number, h: number, f: string, p = '50% 50%') =>
+    fitRect(box, w, h, f, p)
+
+  it('fill (and unknown values) stretch to the box', () => {
+    expect(fit(50, 50, 'fill')).toEqual(box)
+    expect(fit(50, 50, '')).toEqual(box)
+  })
+
+  it('contain letterboxes, centered by default', () => {
+    // 1:1 picture in a 2:1 box: 100x100, bars left and right.
+    expect(fit(50, 50, 'contain')).toEqual({
+      left: 60,
+      top: 20,
+      width: 100,
+      height: 100,
+    })
+    // 4:1 picture: 200x50, bars above and below.
+    expect(fit(400, 100, 'contain')).toEqual({
+      left: 10,
+      top: 45,
+      width: 200,
+      height: 50,
+    })
+  })
+
+  it('cover fills the box and overflows', () => {
+    expect(fit(50, 50, 'cover')).toEqual({
+      left: 10,
+      top: -30,
+      width: 200,
+      height: 200,
+    })
+  })
+
+  it('none keeps the natural size; scale-down never enlarges', () => {
+    expect(fit(50, 40, 'none')).toEqual({
+      left: 85,
+      top: 50,
+      width: 50,
+      height: 40,
+    })
+    expect(fit(50, 40, 'scale-down')).toEqual(fit(50, 40, 'none'))
+    expect(fit(400, 100, 'scale-down')).toEqual(fit(400, 100, 'contain'))
+  })
+
+  it('object-position moves the picture in the free space', () => {
+    expect(fit(50, 50, 'contain', '0% 0%').left).toBe(10)
+    expect(fit(50, 50, 'contain', '100% 0%').left).toBe(110)
+    expect(fit(50, 50, 'contain', 'calc(100% - 10px) 0%').left).toBe(100)
+    expect(fit(50, 50, 'contain', '5px 0%').left).toBe(15)
+  })
+
+  it('leaves an empty box or picture alone', () => {
+    expect(fit(0, 0, 'contain')).toEqual(box)
   })
 })

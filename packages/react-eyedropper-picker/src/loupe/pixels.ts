@@ -1,4 +1,5 @@
-export type LoupeSource = HTMLImageElement | HTMLCanvasElement
+export type LoupeSource =
+  HTMLImageElement | HTMLCanvasElement | HTMLVideoElement
 
 /** RGBA pixels at the source's own resolution, row-major, 4 bytes per pixel. */
 export type PixelBuffer = {
@@ -12,25 +13,43 @@ export type SampleSize = 1 | 3 | 5
 /** Channels are 0-255 integers. Alpha is 255 for opaque. */
 export type RGBA = { r: number; g: number; b: number; a: number }
 
-/** Intrinsic size: `naturalWidth` for images, the bitmap size for canvases. */
+/** A `<video>`: picked from the frame showing when the loupe opens. */
+export const isVideo = (source: LoupeSource): source is HTMLVideoElement =>
+  'videoWidth' in source
+
+/**
+ * Intrinsic size: `naturalWidth` for images, `videoWidth` for videos, the
+ * bitmap size for canvases.
+ */
 export const getSourceSize = (
   source: LoupeSource
 ): { width: number; height: number } =>
   'naturalWidth' in source
     ? { width: source.naturalWidth, height: source.naturalHeight }
-    : { width: source.width, height: source.height }
+    : isVideo(source)
+      ? { width: source.videoWidth, height: source.videoHeight }
+      : { width: source.width, height: source.height }
+
+/** `HTMLMediaElement.HAVE_CURRENT_DATA`: a frame can be drawn. */
+const HAVE_CURRENT_DATA = 2
 
 /**
  * Draws `source` once onto an offscreen canvas at its intrinsic size and
  * returns the pixels. Call it when the loupe opens and keep the result.
+ * For a video, that is the current frame.
  *
  * Throws `InvalidStateError` if the source has no pixels yet (image not
- * loaded, 0x0 canvas). A cross-origin image without CORS throws
- * `SecurityError` from `getImageData`; that error is passed through.
+ * loaded, 0x0 canvas, video without a frame). A cross-origin image or video
+ * without CORS throws `SecurityError` from `getImageData`; that error is
+ * passed through.
  */
 export const readPixels = (source: LoupeSource): PixelBuffer => {
   const { width, height } = getSourceSize(source)
-  if (width === 0 || height === 0) {
+  if (
+    width === 0 ||
+    height === 0 ||
+    (isVideo(source) && source.readyState < HAVE_CURRENT_DATA)
+  ) {
     throw new DOMException('Source has no pixels yet', 'InvalidStateError')
   }
   const canvas = source.ownerDocument.createElement('canvas')

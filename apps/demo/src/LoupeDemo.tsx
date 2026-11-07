@@ -1,4 +1,10 @@
-import { useRef, useState, type ChangeEvent, type DragEvent } from 'react'
+import {
+  useCallback,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type DragEvent,
+} from 'react'
 import type { UseColorHistoryResult } from 'react-eyedropper-picker'
 import {
   eyeDropperCursor,
@@ -10,9 +16,14 @@ import {
   type PickResult,
   type SampleSize,
 } from 'react-eyedropper-picker/loupe'
-import { drawColorField, drawPixelArt, toDataUrl } from './samples'
+import {
+  drawColorField,
+  drawPixelArt,
+  playPixelArtVideo,
+  toDataUrl,
+} from './samples'
 
-type SampleId = 'pixel' | 'field' | 'upload'
+type SampleId = 'pixel' | 'field' | 'video' | 'upload'
 type Mode = 'hover' | 'open'
 
 const MODES: { id: Mode; label: string }[] = [
@@ -23,6 +34,7 @@ const MODES: { id: Mode; label: string }[] = [
 const SAMPLES: { id: SampleId; label: string }[] = [
   { id: 'pixel', label: 'Pixel art' },
   { id: 'field', label: 'Color field' },
+  { id: 'video', label: 'Video' },
   { id: 'upload', label: 'Your image' },
 ]
 
@@ -120,6 +132,18 @@ export const LoupeDemo = ({ onPick, history }: Props) => {
   const [error, setError] = useState<string | null>(null)
 
   const imageRef = useRef<HTMLImageElement | null>(null)
+  const videoRef = useRef<HTMLVideoElement | null>(null)
+  // Stable, so the video starts once per mount, not per render.
+  const attachVideo = useCallback((video: HTMLVideoElement | null) => {
+    videoRef.current = video
+    if (!video) return
+    const stop = playPixelArtVideo(video)
+    return () => {
+      videoRef.current = null
+      stop()
+    }
+  }, [])
+  const isVideo = sample === 'video'
 
   const loupe = {
     magnification,
@@ -141,7 +165,10 @@ export const LoupeDemo = ({ onPick, history }: Props) => {
     animate,
     cursor: CURSORS.find((c) => c.id === cursor)!.value,
   }
-  const { open, isOpen } = useLoupeEyeDropper({ source: imageRef, loupe })
+  const { open, isOpen } = useLoupeEyeDropper({
+    source: isVideo ? videoRef : imageRef,
+    loupe,
+  })
 
   const record = (result: PickResult) => {
     setError(null)
@@ -151,7 +178,7 @@ export const LoupeDemo = ({ onPick, history }: Props) => {
   }
 
   const pick = async () => {
-    if (!imageRef.current) return
+    if (!(isVideo ? videoRef : imageRef).current) return
     setError(null)
     try {
       record(await open())
@@ -160,7 +187,14 @@ export const LoupeDemo = ({ onPick, history }: Props) => {
     }
   }
 
-  const src = sample === 'upload' ? uploadUrl : samples[sample]
+  const src =
+    sample === 'upload'
+      ? uploadUrl
+      : sample === 'video'
+        ? null
+        : samples[sample]
+  // Hover (ImageColorPicker) is for images; a video opens the loupe.
+  const effectiveMode: Mode = isVideo ? 'open' : mode
 
   const loadFile = (file: File | undefined) => {
     if (!file?.type.startsWith('image/')) return
@@ -184,8 +218,8 @@ export const LoupeDemo = ({ onPick, history }: Props) => {
       <header className="card-header">
         <h2 id="loupe-title">Loupe</h2>
         <p className="muted">
-          Pixel-accurate eye dropper for images and canvases. Works in every
-          browser.
+          Pixel-accurate eye dropper for images, canvases and videos. Works in
+          every browser.
         </p>
       </header>
 
@@ -197,7 +231,8 @@ export const LoupeDemo = ({ onPick, history }: Props) => {
                 key={m.id}
                 type="button"
                 role="radio"
-                aria-checked={mode === m.id}
+                aria-checked={effectiveMode === m.id}
+                disabled={isVideo && m.id === 'hover'}
                 onClick={() => setMode(m.id)}
               >
                 {m.label}
@@ -227,11 +262,22 @@ export const LoupeDemo = ({ onPick, history }: Props) => {
             className="stage"
             onDragOver={(e) => e.preventDefault()}
             onDrop={onDrop}
-            onClick={mode === 'open' ? pick : undefined}
-            title={mode === 'open' ? 'Click to pick a color' : undefined}
+            onClick={effectiveMode === 'open' ? pick : undefined}
+            title={
+              effectiveMode === 'open' ? 'Click to pick a color' : undefined
+            }
           >
+            {isVideo && (
+              <video
+                ref={attachVideo}
+                className="source video"
+                aria-label="Pixel art video"
+                muted
+                playsInline
+              />
+            )}
             {src &&
-              (mode === 'hover' ? (
+              (effectiveMode === 'hover' ? (
                 <ImageColorPicker
                   key={src}
                   src={src}
@@ -256,19 +302,25 @@ export const LoupeDemo = ({ onPick, history }: Props) => {
               ))}
           </div>
           <p className="muted small">
-            Drop an image on the stage to use it. Images stay in your browser.
+            {isVideo
+              ? 'The loupe picks from the frame showing when it opens. That frame stays on screen until you pick; the video keeps playing.'
+              : 'Drop an image on the stage to use it. Images stay in your browser.'}
           </p>
         </div>
 
         <div className="controls-column">
-          {mode === 'open' ? (
+          {effectiveMode === 'open' ? (
             <button
               type="button"
               className="primary"
               onClick={pick}
               aria-busy={isOpen}
             >
-              {isOpen ? 'Picking…' : 'Pick from image'}
+              {isOpen
+                ? 'Picking…'
+                : isVideo
+                  ? 'Pick from video'
+                  : 'Pick from image'}
             </button>
           ) : (
             <p className="hint">
@@ -522,7 +574,7 @@ export const LoupeDemo = ({ onPick, history }: Props) => {
           <details className="keys">
             <summary>Controls</summary>
             <dl>
-              {mode === 'hover' ? (
+              {effectiveMode === 'hover' ? (
                 <>
                   <dt>Hover / click</dt>
                   <dd>Aim / pick, again and again</dd>

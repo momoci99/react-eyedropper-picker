@@ -22,6 +22,13 @@ const makeBuffer = (
   return { width, height, data }
 }
 
+const makeVideo = (width: number, height: number, readyState = 2) =>
+  Object.defineProperties(document.createElement('video'), {
+    videoWidth: { value: width },
+    videoHeight: { value: height },
+    readyState: { value: readyState },
+  })
+
 const makeImage = (width: number, height: number) => {
   const img = document.createElement('img')
   Object.defineProperty(img, 'naturalWidth', { value: width })
@@ -89,6 +96,13 @@ describe('getSourceSize', () => {
     canvas.height = 20
     expect(getSourceSize(canvas)).toEqual({ width: 30, height: 20 })
   })
+
+  it('uses the frame size for videos', () => {
+    expect(getSourceSize(makeVideo(1280, 720))).toEqual({
+      width: 1280,
+      height: 720,
+    })
+  })
 })
 
 describe('readPixels', () => {
@@ -139,6 +153,25 @@ describe('readPixels', () => {
   it('throws InvalidStateError for an image that is not loaded', () => {
     const { getContext } = mockContext()
     expect(() => readPixels(makeImage(0, 0))).toThrow(
+      expect.objectContaining({ name: 'InvalidStateError' })
+    )
+    expect(getContext).not.toHaveBeenCalled()
+  })
+
+  it('reads the current frame of a video', () => {
+    const { ctx } = mockContext()
+    const video = makeVideo(2, 1)
+    expect(readPixels(video).width).toBe(2)
+    expect(ctx.drawImage).toHaveBeenCalledWith(video, 0, 0)
+  })
+
+  it('throws InvalidStateError for a video without a frame', () => {
+    const { getContext } = mockContext()
+    // HAVE_METADATA: the size is known, no frame yet.
+    expect(() => readPixels(makeVideo(2, 1, 1))).toThrow(
+      expect.objectContaining({ name: 'InvalidStateError' })
+    )
+    expect(() => readPixels(makeVideo(0, 0, 0))).toThrow(
       expect.objectContaining({ name: 'InvalidStateError' })
     )
     expect(getContext).not.toHaveBeenCalled()

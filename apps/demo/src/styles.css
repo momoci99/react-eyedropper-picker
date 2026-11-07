@@ -426,3 +426,11 @@ kbd {
   height: auto;
   border-radius: 8px;
 }
+
+/* 16:9 frames in a 3:2 box: object-fit contain letterboxes them, so the
+   demo shows that picking skips the bars. */
+.source.video {
+  aspect-ratio: 3 / 2;
+  object-fit: contain;
+  background: #000;
+}
