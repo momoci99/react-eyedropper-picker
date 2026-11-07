@@ -35,6 +35,11 @@ export type ColorPickerProps = UseColorPickerOptions & {
    * Default false.
    */
   history?: boolean | UseColorHistoryOptions | UseColorHistoryResult
+  /**
+   * While dragging the panel or hue slider by touch, show the color in a
+   * bubble above the finger. Default true.
+   */
+  touchBubble?: boolean
   className?: string
   style?: CSSProperties
 }
@@ -44,6 +49,7 @@ export const ColorPicker = ({
   showInput = true,
   theme = 'light',
   history = false,
+  touchBubble = true,
   className,
   style,
   ...options
@@ -85,8 +91,12 @@ export const ColorPicker = ({
         ...style,
       }}
     >
-      <SaturationPanel hsv={hsv} onChange={setHsv} />
-      <HueSlider hue={hsv.h} onChange={(h) => setHsv({ ...hsv, h })} />
+      <SaturationPanel hsv={hsv} onChange={setHsv} touchBubble={touchBubble} />
+      <HueSlider
+        hue={hsv.h}
+        onChange={(h) => setHsv({ ...hsv, h })}
+        touchBubble={touchBubble}
+      />
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <div
           aria-hidden="true"

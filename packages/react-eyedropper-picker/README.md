@@ -33,8 +33,11 @@ function App() {
 | `showInput`      | `boolean`               | `true`      | Show hex input                                |
 | `theme`          | `'light' \| 'dark' \| 'auto'` | `'light'` | `'auto'` follows the OS (see Theming) |
 | `history`        | `boolean \| UseColorHistoryOptions \| UseColorHistoryResult` | `false` | Recent picks under the input (see Color history) |
+| `touchBubble`    | `boolean`               | `true`      | Color bubble above the finger on touch drags  |
 | `className`      | `string`                | –           | Root class name                               |
 | `style`          | `CSSProperties`         | –           | Root inline style (merged with defaults)      |
+
+On touch screens the thumb covers the handle, so while you drag the panel or hue slider by touch, a bubble above the finger shows the color under it. Mouse and pen don't show it. `SaturationPanel` and `HueSlider` take `touchBubble` too.
 
 ### Theming
 

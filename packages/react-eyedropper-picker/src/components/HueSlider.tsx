@@ -1,10 +1,16 @@
 import { useCallback, type CSSProperties, type KeyboardEvent } from 'react'
 import { usePointerDrag } from '../hooks/usePointerDrag'
+import { ColorBubble } from './ColorBubble'
 
 export type HueSliderProps = {
   /** 0-360 */
   hue: number
   onChange: (hue: number) => void
+  /**
+   * While dragging by touch, show the hue in a bubble above the finger,
+   * which hides the handle. Default true. Mouse and pen never show it.
+   */
+  touchBubble?: boolean
   className?: string
   style?: CSSProperties
 }
@@ -12,10 +18,11 @@ export type HueSliderProps = {
 export const HueSlider = ({
   hue,
   onChange,
+  touchBubble = true,
   className,
   style,
 }: HueSliderProps) => {
-  const drag = usePointerDrag<HTMLDivElement>(
+  const { touching, handlers } = usePointerDrag<HTMLDivElement>(
     useCallback(({ x }) => onChange(x * 360), [onChange])
   )
 
@@ -33,7 +40,7 @@ export const HueSlider = ({
 
   return (
     <div
-      {...drag}
+      {...handlers}
       role="slider"
       tabIndex={0}
       aria-label="Hue"
@@ -69,6 +76,13 @@ export const HueSlider = ({
           pointerEvents: 'none',
         }}
       />
+      {touchBubble && touching && (
+        <ColorBubble
+          color={`hsl(${hue}, 100%, 50%)`}
+          left={`${(hue / 360) * 100}%`}
+          top="50%"
+        />
+      )}
     </div>
   )
 }

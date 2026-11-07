@@ -1,10 +1,16 @@
 import { useCallback, type CSSProperties, type KeyboardEvent } from 'react'
-import type { HSV } from '../utils/color'
+import { hsvToHex, type HSV } from '../utils/color'
 import { usePointerDrag } from '../hooks/usePointerDrag'
+import { ColorBubble } from './ColorBubble'
 
 export type SaturationPanelProps = {
   hsv: HSV
   onChange: (hsv: HSV) => void
+  /**
+   * While dragging by touch, show the color in a bubble above the finger,
+   * which hides the handle. Default true. Mouse and pen never show it.
+   */
+  touchBubble?: boolean
   className?: string
   style?: CSSProperties
 }
@@ -14,10 +20,11 @@ const clamp = (n: number) => Math.min(100, Math.max(0, n))
 export const SaturationPanel = ({
   hsv,
   onChange,
+  touchBubble = true,
   className,
   style,
 }: SaturationPanelProps) => {
-  const drag = usePointerDrag<HTMLDivElement>(
+  const { touching, handlers } = usePointerDrag<HTMLDivElement>(
     useCallback(
       ({ x, y }) => onChange({ h: hsv.h, s: x * 100, v: (1 - y) * 100 }),
       [hsv.h, onChange]
@@ -40,7 +47,7 @@ export const SaturationPanel = ({
 
   return (
     <div
-      {...drag}
+      {...handlers}
       role="slider"
       tabIndex={0}
       aria-label="Saturation and brightness"
@@ -72,6 +79,13 @@ export const SaturationPanel = ({
           pointerEvents: 'none',
         }}
       />
+      {touchBubble && touching && (
+        <ColorBubble
+          color={hsvToHex(hsv)}
+          left={`${hsv.s}%`}
+          top={`${100 - hsv.v}%`}
+        />
+      )}
     </div>
   )
 }

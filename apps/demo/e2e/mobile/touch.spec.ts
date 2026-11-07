@@ -117,3 +117,53 @@ test.describe('useLoupeEyeDropper', () => {
     await expect(hex).toHaveText(await truth(image, 13, 25))
   })
 })
+
+test.describe('ColorPicker', () => {
+  test('a color bubble rides above the finger, lift hides it', async ({
+    page,
+  }) => {
+    const card = page.locator('.picker-demo')
+    const panel = card.getByRole('slider', { name: /Saturation/ })
+    await panel.scrollIntoViewIfNeeded()
+    const box = (await panel.boundingBox())!
+    const bubble = panel.locator('[aria-hidden="true"] > div')
+
+    const finger = await touch(page)
+    const at: [number, number] = [
+      box.x + box.width * 0.6,
+      box.y + box.height * 0.5,
+    ]
+    await finger.start([box.x + box.width * 0.3, box.y + box.height * 0.7])
+    await finger.move(at)
+    await expect(bubble).toBeVisible()
+
+    // Above the fingertip, horizontally on it.
+    const b = (await bubble.boundingBox())!
+    expect(b.y + b.height).toBeLessThan(at[1] - 16)
+    expect(Math.abs(b.x + b.width / 2 - at[0])).toBeLessThan(2)
+
+    // Shows the color being picked.
+    const hex = await card.getByLabel('Hex color').inputValue()
+    expect(
+      await bubble.evaluate((el) => getComputedStyle(el).backgroundColor)
+    ).toBe(
+      `rgb(${[1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(', ')})`
+    )
+
+    await finger.end()
+    await expect(bubble).toHaveCount(0)
+  })
+
+  test('the hue slider shows a bubble too', async ({ page }) => {
+    const slider = page
+      .locator('.picker-demo')
+      .getByRole('slider', { name: 'Hue' })
+    await slider.scrollIntoViewIfNeeded()
+    const box = (await slider.boundingBox())!
+    const finger = await touch(page)
+    await finger.start([box.x + box.width / 2, box.y + box.height / 2])
+    await expect(slider.locator('[aria-hidden="true"] > div')).toBeVisible()
+    await finger.end()
+    await expect(slider.locator('[aria-hidden="true"] > div')).toHaveCount(0)
+  })
+})
