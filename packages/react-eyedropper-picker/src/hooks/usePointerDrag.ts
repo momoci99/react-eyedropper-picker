@@ -1,4 +1,4 @@
-import { useCallback, useRef, type PointerEvent } from 'react'
+import { useCallback, useRef, useState, type PointerEvent } from 'react'
 
 /** Relative pointer position inside an element, each axis clamped to 0..1. */
 export type DragPosition = { x: number; y: number }
@@ -7,6 +7,8 @@ export const usePointerDrag = <T extends HTMLElement>(
   onMove: (pos: DragPosition) => void
 ) => {
   const ref = useRef<T>(null)
+  /** A finger is dragging: the thumb covers the handle. */
+  const [touching, setTouching] = useState(false)
 
   const emit = useCallback(
     (e: PointerEvent<T>) => {
@@ -28,6 +30,7 @@ export const usePointerDrag = <T extends HTMLElement>(
       e.preventDefault()
       e.currentTarget.setPointerCapture?.(e.pointerId)
       e.currentTarget.focus()
+      setTouching(e.pointerType === 'touch')
       emit(e)
     },
     [emit]
@@ -40,5 +43,17 @@ export const usePointerDrag = <T extends HTMLElement>(
     [emit]
   )
 
-  return { ref, onPointerDown, onPointerMove }
+  const end = useCallback(() => setTouching(false), [])
+
+  return {
+    touching,
+    handlers: {
+      ref,
+      onPointerDown,
+      onPointerMove,
+      onPointerUp: end,
+      onPointerCancel: end,
+      onLostPointerCapture: end,
+    },
+  }
 }
