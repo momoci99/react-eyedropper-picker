@@ -361,6 +361,16 @@ input[type='range'] {
   cursor: pointer;
 }
 
+.history-clear {
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  font-size: 12px;
+  cursor: pointer;
+}
+
 .keys summary {
   font-size: 13px;
   font-weight: 600;

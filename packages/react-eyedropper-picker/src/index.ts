@@ -15,6 +15,11 @@ export {
   type UseColorPickerResult,
 } from './hooks/useColorPicker'
 export {
+  useColorHistory,
+  type UseColorHistoryOptions,
+  type UseColorHistoryResult,
+} from './hooks/useColorHistory'
+export {
   useEyeDropper,
   isEyeDropperSupported,
   type UseEyeDropperResult,

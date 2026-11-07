@@ -1,4 +1,5 @@
 import { useRef, useState, type ChangeEvent, type DragEvent } from 'react'
+import type { UseColorHistoryResult } from 'react-eyedropper-picker'
 import {
   ImageColorPicker,
   useLoupeEyeDropper,
@@ -45,7 +46,6 @@ const SOUND_GROUPS = [
   events: readonly LoupeSoundEvent[]
 }[]
 type SoundGroup = (typeof SOUND_GROUPS)[number]['id']
-const HISTORY_LIMIT = 10
 
 // The slider is logarithmic: equal moves feel like equal zoom steps.
 const SLIDER_MAX = 1000
@@ -73,9 +73,13 @@ const customLabel = (c: LoupePickResult) => (
 const sampleClass = (id: SampleId) =>
   id === 'pixel' ? 'source pixelated' : 'source'
 
-type Props = { onPick: (hex: string) => void }
+type Props = {
+  onPick: (hex: string) => void
+  /** Shared with the color picker below. */
+  history: UseColorHistoryResult
+}
 
-export const LoupeDemo = ({ onPick }: Props) => {
+export const LoupeDemo = ({ onPick, history }: Props) => {
   // Client-only demo: drawing in the initializer is fine.
   const [samples] = useState(() => ({
     pixel: toDataUrl(drawPixelArt),
@@ -103,7 +107,7 @@ export const LoupeDemo = ({ onPick }: Props) => {
   // Library default is 0 (no glide); the demo shows a little.
   const [smoothing, setSmoothing] = useState(0.4)
   const [animate, setAnimate] = useState(true)
-  const [history, setHistory] = useState<PickResult[]>([])
+  const [latest, setLatest] = useState<PickResult | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const imageRef = useRef<HTMLImageElement | null>(null)
@@ -131,12 +135,8 @@ export const LoupeDemo = ({ onPick }: Props) => {
 
   const record = (result: PickResult) => {
     setError(null)
-    setHistory((h) =>
-      [result, ...h.filter((r) => r.sRGBHex !== result.sRGBHex)].slice(
-        0,
-        HISTORY_LIMIT
-      )
-    )
+    setLatest(result)
+    history.add(result.sRGBHex)
     onPick(result.sRGBHex)
   }
 
@@ -168,8 +168,6 @@ export const LoupeDemo = ({ onPick }: Props) => {
     e.preventDefault()
     loadFile(e.dataTransfer.files[0])
   }
-
-  const latest = history[0]
 
   return (
     <section className="card loupe-demo" aria-labelledby="loupe-title">
@@ -470,21 +468,30 @@ export const LoupeDemo = ({ onPick }: Props) => {
             </label>
           </fieldset>
 
-          {history.length > 0 && (
+          {history.colors.length > 0 && (
             <fieldset>
-              <legend>History</legend>
+              <legend>
+                History (<code>useColorHistory</code>)
+              </legend>
               <div className="history">
-                {history.map((r) => (
+                {history.colors.map((hex) => (
                   <button
-                    key={r.sRGBHex}
+                    key={hex}
                     type="button"
                     className="history-swatch"
-                    style={{ background: r.sRGBHex }}
-                    onClick={() => onPick(r.sRGBHex)}
-                    aria-label={`Use ${r.sRGBHex}`}
-                    title={r.sRGBHex}
+                    style={{ background: hex }}
+                    onClick={() => onPick(hex)}
+                    aria-label={`Use ${hex}`}
+                    title={hex}
                   />
                 ))}
+                <button
+                  type="button"
+                  className="history-clear"
+                  onClick={history.clear}
+                >
+                  Clear
+                </button>
               </div>
             </fieldset>
           )}
