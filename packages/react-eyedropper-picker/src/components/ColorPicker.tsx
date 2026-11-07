@@ -5,13 +5,14 @@ import {
 } from '../hooks/useColorPicker'
 import { SaturationPanel } from './SaturationPanel'
 import { HueSlider } from './HueSlider'
+import { AlphaSlider, overCheckerboard } from './AlphaSlider'
 import { EyeDropperButton } from './EyeDropperButton'
 import {
   useColorHistory,
   type UseColorHistoryOptions,
   type UseColorHistoryResult,
 } from '../hooks/useColorHistory'
-import { normalizeHex } from '../utils/color'
+import { normalizeHex, normalizeHexAlpha } from '../utils/color'
 import { themeColorScheme, themeVar, type ColorPickerTheme } from '../theme'
 
 export type ColorPickerProps = UseColorPickerOptions & {
@@ -54,8 +55,17 @@ export const ColorPicker = ({
   style,
   ...options
 }: ColorPickerProps) => {
-  const { hex, hsv, setHex, setHsv, pickFromScreen, isEyeDropperSupported } =
-    useColorPicker(options)
+  const {
+    hex,
+    hsv,
+    alpha,
+    setHex,
+    setHsv,
+    setAlpha,
+    pickFromScreen,
+    isEyeDropperSupported,
+  } = useColorPicker(options)
+  const normalize = options.alpha ? normalizeHexAlpha : normalizeHex
 
   const external = isHistoryResult(history) ? history : null
   const own = useColorHistory(
@@ -68,8 +78,14 @@ export const ColorPicker = ({
   // Local draft so typing partial hex doesn't get overwritten
   const [draft, setDraft] = useState(hex)
   useEffect(() => {
-    setDraft((d) => (normalizeHex(d) === hex ? d : hex))
-  }, [hex])
+    setDraft((d) => (normalize(d) === hex ? d : hex))
+  }, [hex, normalize])
+  // Turning alpha on or off changes the format: show the new one.
+  const [draftAlpha, setDraftAlpha] = useState(options.alpha)
+  if (draftAlpha !== options.alpha) {
+    setDraftAlpha(options.alpha)
+    setDraft(hex)
+  }
 
   return (
     <div
@@ -97,6 +113,14 @@ export const ColorPicker = ({
         onChange={(h) => setHsv({ ...hsv, h })}
         touchBubble={touchBubble}
       />
+      {options.alpha && (
+        <AlphaSlider
+          color={hex}
+          alpha={alpha}
+          onChange={setAlpha}
+          touchBubble={touchBubble}
+        />
+      )}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <div
           aria-hidden="true"
@@ -105,7 +129,7 @@ export const ColorPicker = ({
             height: 32,
             flexShrink: 0,
             borderRadius: 6,
-            background: hex,
+            background: overCheckerboard(hex),
             boxShadow: `inset 0 0 0 1px ${themeVar('border', theme)}`,
           }}
         />
@@ -153,7 +177,7 @@ export const ColorPicker = ({
       {recent && recent.colors.length > 0 && (
         <RecentColors
           colors={recent.colors}
-          current={hex}
+          current={normalizeHexAlpha(hex)!}
           theme={theme}
           onSelect={setHex}
         />
@@ -169,6 +193,7 @@ const isHistoryResult = (
 
 type RecentColorsProps = {
   colors: readonly string[]
+  /** `#rrggbbaa`, to compare with any stored form. */
   current: string
   theme: ColorPickerTheme
   onSelect: (hex: string) => void
@@ -201,9 +226,9 @@ const RecentColors = ({
           padding: 0,
           border: 'none',
           borderRadius: 4,
-          background: color,
+          background: overCheckerboard(color),
           boxShadow:
-            color === current
+            normalizeHexAlpha(color) === current
               ? `0 0 0 2px ${themeVar('bg', theme)}, 0 0 0 3px ${themeVar('fg', theme)}`
               : `inset 0 0 0 1px ${themeVar('border', theme)}`,
           cursor: 'pointer',

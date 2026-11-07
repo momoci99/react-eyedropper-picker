@@ -10,7 +10,8 @@ import { build } from 'rolldown'
 
 /** Bytes, minified + gzip. Raise on purpose, in the PR that needs it. */
 const BUDGETS = {
-  'react-eyedropper-picker': { file: 'dist/index.js', limit: 5_000 },
+  // 5.00 → 5.50 kB: alpha (AlphaSlider, #rrggbbaa parsing), always in ColorPicker.
+  'react-eyedropper-picker': { file: 'dist/index.js', limit: 5_500 },
   'react-eyedropper-picker/loupe': { file: 'dist/loupe.js', limit: 12_000 },
 }
 

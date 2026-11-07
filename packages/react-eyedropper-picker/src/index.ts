@@ -4,6 +4,7 @@ export {
   type SaturationPanelProps,
 } from './components/SaturationPanel'
 export { HueSlider, type HueSliderProps } from './components/HueSlider'
+export { AlphaSlider, type AlphaSliderProps } from './components/AlphaSlider'
 export {
   EyeDropperButton,
   EyeDropperIcon,
