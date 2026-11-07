@@ -1,6 +1,6 @@
 import {
   clientToSourcePixel,
-  touchLoupeCenter,
+  loupeCenterAbove,
   type DisplayRect,
   type Point,
 } from './geometry'
@@ -14,7 +14,12 @@ import {
 } from './magnification'
 import type { LoupeFeedback } from './feedback'
 import type { LoupeSource, PixelBuffer, SampleSize } from './pixels'
-import { TOUCH_GAP, type LoupePickResult } from './session'
+import {
+  CURSOR_GAP,
+  loupeAboveCursor,
+  TOUCH_GAP,
+  type LoupePickResult,
+} from './session'
 import { createTouchTracker } from './touch'
 import {
   createLoupeView,
@@ -55,6 +60,11 @@ export type LoupeHoverOptions = {
   smoothing?: number
   /** See `LoupeViewOptions.animate`. */
   animate?: boolean
+  /**
+   * CSS cursor over the source while the loupe shows. Default `'none'`.
+   * Any other value moves the loupe above the pointer.
+   */
+  cursor?: string
 }
 
 export type LoupeHover = {
@@ -80,6 +90,7 @@ export type LoupeHover = {
 export const attachLoupeHover = (options: LoupeHoverOptions): LoupeHover => {
   const { source, config, size, sampleSize } = options
   const feedback = options.feedback ?? null
+  const above = loupeAboveCursor(options.cursor)
   const doc = source.ownerDocument
   const win = doc.defaultView!
   // The union type of `source` hides the typed listener overloads.
@@ -176,9 +187,9 @@ export const attachLoupeHover = (options: LoupeHoverOptions): LoupeHover => {
     visible = true
     rect = source.getBoundingClientRect()
     view.mount(doc.body)
-    // Hide the cursor: the loupe center is the cursor.
+    // By default hide the cursor: the loupe center is the cursor.
     cursor = source.style.cursor
-    source.style.cursor = 'none'
+    source.style.cursor = options.cursor ?? 'none'
   }
 
   const hide = () => {
@@ -227,7 +238,7 @@ export const attachLoupeHover = (options: LoupeHoverOptions): LoupeHover => {
     aim: (x, y) => {
       show()
       pixel = pixelAt(x, y)
-      anchor = touchLoupeCenter(x, y, size, TOUCH_GAP)
+      anchor = loupeCenterAbove(x, y, size, TOUCH_GAP)
       schedule()
     },
     pinch: (start, startDistance, distance) =>
@@ -244,7 +255,9 @@ export const attachLoupeHover = (options: LoupeHoverOptions): LoupeHover => {
     if (!ready()) return
     show()
     rect = source.getBoundingClientRect()
-    anchor = { x: e.clientX, y: e.clientY }
+    anchor = above
+      ? loupeCenterAbove(e.clientX, e.clientY, size, CURSOR_GAP)
+      : { x: e.clientX, y: e.clientY }
     pixel = pixelAt(e.clientX, e.clientY)
     schedule()
   }

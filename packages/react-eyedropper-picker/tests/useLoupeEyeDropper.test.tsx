@@ -107,6 +107,18 @@ describe('useLoupeEyeDropper', () => {
     expect(result.current.isOpen).toBe(false)
   })
 
+  it('passes the cursor option to the loupe', () => {
+    const frames = mockFrames()
+    const { result } = render({
+      source: mockSource(),
+      loupe: { cursor: 'copy' },
+    })
+    openLoupe(result)
+    frames.flush()
+    expect(getOverlay()!.style.cursor).toBe('copy')
+    act(() => result.current.close())
+  })
+
   it('prefers the loupe in auto mode even with native support', async () => {
     installEyeDropper()
     const { result } = render({ source: mockSource() })

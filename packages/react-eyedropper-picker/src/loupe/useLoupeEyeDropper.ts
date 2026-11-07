@@ -61,6 +61,15 @@ export type LoupeOptions = MagnificationOptions & {
    */
   animate?: boolean
   /**
+   * CSS `cursor` over the image while the loupe shows. Default `'none'`:
+   * the cursor is hidden and the loupe is centered on the pointer, its
+   * center pixel marking the spot. Any other value shows that cursor and
+   * moves the loupe above it (below near the top of the viewport).
+   * `eyeDropperCursor` is a ready-made eye dropper
+   * icon; any value works, e.g. `'url(/pick.svg) 2 22, crosshair'`.
+   */
+  cursor?: string
+  /**
    * Sounds made with Web Audio: a tick per pixel (a "brrrt" when moving
    * fast), a detent tick per zoom step, open, confirm and cancel.
    * Default false. `true` or options turn it on.
@@ -212,6 +221,7 @@ export const useLoupeEyeDropper = (
           className: loupe.className,
           smoothing: loupe.smoothing,
           animate: loupe.animate,
+          cursor: loupe.cursor,
           feedback,
           signal: openOptions.signal,
         })

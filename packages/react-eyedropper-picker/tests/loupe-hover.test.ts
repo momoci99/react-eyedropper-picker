@@ -99,6 +99,32 @@ describe('attachLoupeHover', () => {
     expect(source.style.cursor).toBe('none')
   })
 
+  it('moves the loupe above a visible cursor', () => {
+    attach({ cursor: 'copy' })
+    hoverAt(35, 45)
+    frames.flush()
+    // No room above near the top: below the pointer.
+    // Center (35, 45 + 52 + 60) = (35, 157).
+    expect(loupe()!.style.transform).toBe('translate(-25px, 97px)')
+    expect(labelText()).toBe(gridHex(3, 4))
+  })
+
+  it('keeps the loupe centered for cursor none', () => {
+    attach({ cursor: 'none' })
+    hoverAt(35, 45)
+    frames.flush()
+    expect(loupe()!.style.transform).toBe('translate(-25px, -15px)')
+  })
+
+  it('shows the cursor option over the source', () => {
+    source.style.cursor = 'crosshair'
+    attach({ cursor: 'copy' })
+    hoverAt(35, 45)
+    expect(source.style.cursor).toBe('copy')
+    send('pointerleave', 150, 45)
+    expect(source.style.cursor).toBe('crosshair')
+  })
+
   it('hides on leave and restores the cursor', () => {
     source.style.cursor = 'crosshair'
     attach()

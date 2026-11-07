@@ -2,7 +2,7 @@ import {
   clampPixel,
   clientToSourcePixel,
   sourcePixelToClient,
-  touchLoupeCenter,
+  loupeCenterAbove,
   type DisplayRect,
   type Point,
 } from './geometry'
@@ -63,6 +63,11 @@ export type LoupeSessionOptions = {
   smoothing?: number
   /** See `LoupeViewOptions.animate`. */
   animate?: boolean
+  /**
+   * CSS cursor over the source pixels. Default `'none'`. Any other value
+   * moves the loupe above the pointer.
+   */
+  cursor?: string
   signal?: AbortSignal
 }
 
@@ -76,6 +81,15 @@ export type LoupeSession = {
 
 /** Space between a finger and the loupe edge; the label sits in it. */
 export const TOUCH_GAP = 48
+/**
+ * Space between a visible cursor and the loupe edge: the label (8 + 18 px)
+ * and an eye dropper icon (23 px up from its tip) fit in it.
+ */
+export const CURSOR_GAP = 52
+
+/** A visible cursor would cover the loupe's center: move the loupe above. */
+export const loupeAboveCursor = (cursor: string | undefined) =>
+  !!cursor && cursor !== 'none'
 
 const ARROWS: Record<string, Point> = {
   ArrowLeft: { x: -1, y: 0 },
@@ -104,6 +118,7 @@ export const startLoupeSession = (
   options: LoupeSessionOptions
 ): LoupeSession => {
   const { source, buffer, config, size, sampleSize, signal } = options
+  const above = loupeAboveCursor(options.cursor)
   const feedback = options.feedback ?? null
   const { width: srcWidth, height: srcHeight } = buffer
   const doc = source.ownerDocument
@@ -174,7 +189,7 @@ export const startLoupeSession = (
   // ── Drawing ──
   const draw = () => {
     frame = 0
-    const cursor = pixel ? 'none' : 'default'
+    const cursor = pixel ? (options.cursor ?? 'none') : 'default'
     if (cursor !== lastCursor) {
       lastCursor = cursor
       overlay.style.cursor = cursor
@@ -285,7 +300,7 @@ export const startLoupeSession = (
   const touch = createTouchTracker(() => magnification, {
     aim: (x, y) => {
       pixel = pixelAt(x, y)
-      anchor = touchLoupeCenter(x, y, size, TOUCH_GAP)
+      anchor = loupeCenterAbove(x, y, size, TOUCH_GAP)
       aimed = true
       schedule()
     },
@@ -314,7 +329,9 @@ export const startLoupeSession = (
     'pointermove',
     (e) => {
       if (e.pointerType === 'touch') return touch.move(e)
-      anchor = { x: e.clientX, y: e.clientY }
+      anchor = above
+        ? loupeCenterAbove(e.clientX, e.clientY, size, CURSOR_GAP)
+        : { x: e.clientX, y: e.clientY }
       pixel = pixelAt(e.clientX, e.clientY)
       aimed = true
       schedule()

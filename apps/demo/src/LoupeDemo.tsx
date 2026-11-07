@@ -1,6 +1,7 @@
 import { useRef, useState, type ChangeEvent, type DragEvent } from 'react'
 import type { UseColorHistoryResult } from 'react-eyedropper-picker'
 import {
+  eyeDropperCursor,
   ImageColorPicker,
   useLoupeEyeDropper,
   type LoupePickResult,
@@ -24,6 +25,13 @@ const SAMPLES: { id: SampleId; label: string }[] = [
   { id: 'field', label: 'Color field' },
   { id: 'upload', label: 'Your image' },
 ]
+
+const CURSORS = [
+  { id: 'none', label: 'No cursor', value: undefined },
+  { id: 'eyedropper', label: 'Eye dropper cursor', value: eyeDropperCursor },
+  { id: 'crosshair', label: 'Crosshair cursor', value: 'crosshair' },
+] as const
+type CursorId = (typeof CURSORS)[number]['id']
 
 const STEPS = [2, 4, 8, 16, 32, 64]
 const SIZES = [80, 120, 160, 200]
@@ -107,6 +115,7 @@ export const LoupeDemo = ({ onPick, history }: Props) => {
   // Library default is 0 (no glide); the demo shows a little.
   const [smoothing, setSmoothing] = useState(0.4)
   const [animate, setAnimate] = useState(true)
+  const [cursor, setCursor] = useState<CursorId>('none')
   const [latest, setLatest] = useState<PickResult | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -130,6 +139,7 @@ export const LoupeDemo = ({ onPick, history }: Props) => {
     haptics,
     smoothing,
     animate,
+    cursor: CURSORS.find((c) => c.id === cursor)!.value,
   }
   const { open, isOpen } = useLoupeEyeDropper({ source: imageRef, loupe })
 
@@ -345,6 +355,19 @@ export const LoupeDemo = ({ onPick, history }: Props) => {
                   onClick={() => setShape(s)}
                 >
                   {s === 'circle' ? 'Circle' : 'Square'}
+                </button>
+              ))}
+            </div>
+            <div className="segmented" role="radiogroup" aria-label="Cursor">
+              {CURSORS.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={cursor === c.id}
+                  onClick={() => setCursor(c.id)}
+                >
+                  {c.label}
                 </button>
               ))}
             </div>
