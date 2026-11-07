@@ -90,6 +90,28 @@ describe('startLoupeSession', () => {
     expect(labelText()).toBe(gridHex(3, 4))
   })
 
+  it('hides the cursor over the source, or shows the cursor option', () => {
+    start()
+    frames.flush()
+    expect(getOverlay()!.style.cursor).toBe('none')
+    sessions.pop()!.cancel()
+    start({ cursor: 'copy' })
+    frames.flush()
+    expect(getOverlay()!.style.cursor).toBe('copy')
+    pointer('pointermove', 150, 50)
+    frames.flush()
+    expect(getOverlay()!.style.cursor).toBe('default')
+  })
+
+  it('moves the loupe above a visible cursor', () => {
+    start({ cursor: 'copy' })
+    frames.flush()
+    pointer('pointermove', 35, 45)
+    frames.flush()
+    expect(loupeElement().style.transform).toBe('translate(-25px, 97px)')
+    expect(labelText()).toBe(gridHex(3, 4))
+  })
+
   it('hides the loupe outside the source', () => {
     start()
     pointer('pointermove', 150, 50)

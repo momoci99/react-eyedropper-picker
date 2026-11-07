@@ -13,6 +13,7 @@ export {
   type UseLoupeEyeDropperOptions,
   type UseLoupeEyeDropperResult,
 } from './useLoupeEyeDropper'
+export { eyeDropperCursor } from './cursor'
 export type { LoupePickResult, LoupeShape } from './session'
 export type { SampleSize } from './pixels'
 export type {

@@ -123,11 +123,11 @@ export const sourcePixelToClient = (
 })
 
 /**
- * Loupe center for a finger at (`x`, `y`): `gap` px above the finger so the
- * finger doesn't cover it, or below when the loupe would leave the top of
- * the viewport.
+ * Loupe center above a finger or visible cursor at (`x`, `y`), its edge
+ * `gap` px away so neither covers it. Below instead when the loupe would
+ * leave the top of the viewport.
  */
-export const touchLoupeCenter = (
+export const loupeCenterAbove = (
   x: number,
   y: number,
   size: number,

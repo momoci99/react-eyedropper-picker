@@ -196,7 +196,7 @@ function ImagePicker() {
 - Touch: the loupe sits above your finger. Drag to aim, lift to pick, tap outside to cancel, pinch to zoom.
 - Keyboard: arrows move 1px (Shift: 10px), Enter picks, Escape cancels, `+` / `-` zoom, `0` resets.
 - `mode`: `'auto'` (default) uses the loupe when there is a `source`, else the native EyeDropper. `'native'` and `'loupe'` force one.
-- `loupe` options: `defaultMagnification` (8), `minMagnification` (1), `maxMagnification` (64), `magnificationSteps`, controlled `magnification` + `onMagnificationChange`, `size` (120), `shape` (`'circle'` | `'square'`), `grid` (true), `sampleSize` (1 | 3 | 5), `className`, `smoothing` (0), `animate` (true), `sound` (false), `haptics` (false).
+- `loupe` options: `defaultMagnification` (8), `minMagnification` (1), `maxMagnification` (64), `magnificationSteps`, controlled `magnification` + `onMagnificationChange`, `size` (120), `shape` (`'circle'` | `'square'`), `grid` (true), `sampleSize` (1 | 3 | 5), `className`, `smoothing` (0), `animate` (true), `cursor` (`'none'`), `sound` (false), `haptics` (false).
 - Cross-origin images need CORS (`crossOrigin="anonymous"`), or `open()` rejects with `SecurityError`.
 - Focus returns to the element that was focused before `open()`. Don't disable that button while `isOpen`, or focus is lost (a disabled button can't take focus back).
 
@@ -219,6 +219,17 @@ const dropper = useLoupeEyeDropper({ source: img })
 - `smoothing` (0 to 1, default 0): the loupe glides after the pointer instead of jumping. The picked pixel is always the one under the pointer; only the loupe's position lags.
 - `animate` (default true): the loupe grows in when it appears, shrinks out when it closes, and zooms smoothly.
 - Both turn off when the user prefers reduced motion (`prefers-reduced-motion: reduce`).
+
+#### Cursor
+
+Over the image the cursor is hidden by default and the loupe is centered on the pointer: its center pixel marks the spot. `cursor` takes any CSS `cursor` value to show instead; the loupe then moves above the pointer, as it does over a finger, so the cursor doesn't cover it (below near the top of the viewport). `eyeDropperCursor` is a ready-made eye dropper icon (tip on the pointer, outlined for any background):
+
+```tsx
+import { ImageColorPicker, eyeDropperCursor } from 'react-eyedropper-picker/loupe'
+
+<ImageColorPicker src="/photo.jpg" loupe={{ cursor: eyeDropperCursor }} />
+useLoupeEyeDropper({ source, loupe: { cursor: 'url(/pick.png) 2 22, crosshair' } })
+```
 
 #### Sound and haptics
 

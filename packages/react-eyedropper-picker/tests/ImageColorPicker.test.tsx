@@ -96,6 +96,20 @@ describe('ImageColorPicker', () => {
     })
   })
 
+  it('passes the cursor option to the hover and keyboard loupes', () => {
+    render(<ImageColorPicker src="a.png" alt="" loupe={{ cursor: 'copy' }} />)
+    hoverAt(35, 45)
+    expect(image().style.cursor).toBe('copy')
+    image().dispatchEvent(
+      new PointerEvent('pointerleave', { pointerType: 'mouse' })
+    )
+    expect(image().style.cursor).toBe('crosshair')
+    act(() => image().focus())
+    key('Enter')
+    frames.flush()
+    expect(getOverlay()!.style.cursor).toBe('copy')
+  })
+
   it('opens the full-screen loupe with Enter', async () => {
     const onPick = vi.fn()
     render(<ImageColorPicker src="a.png" alt="" onPick={onPick} />)

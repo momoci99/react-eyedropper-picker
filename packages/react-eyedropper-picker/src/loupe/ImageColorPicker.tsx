@@ -137,6 +137,7 @@ export const ImageColorPicker = ({
     className,
     smoothing,
     animate,
+    cursor,
     defaultMagnification,
     minMagnification,
     maxMagnification,
@@ -246,6 +247,7 @@ export const ImageColorPicker = ({
       className,
       smoothing,
       animate,
+      cursor,
       label,
       feedback: forward,
       onAim: label
@@ -314,6 +316,7 @@ export const ImageColorPicker = ({
     className,
     smoothing,
     animate,
+    cursor,
     hasLabel,
     src,
     loads,
