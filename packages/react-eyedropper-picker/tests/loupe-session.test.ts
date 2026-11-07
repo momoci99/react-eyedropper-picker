@@ -94,7 +94,9 @@ describe('startLoupeSession', () => {
     start()
     frames.flush()
     expect(getOverlay()!.style.cursor).toBe('none')
-    sessions.pop()!.cancel()
+    const first = sessions.pop()!
+    first.result.catch(() => {})
+    first.cancel()
     start({ cursor: 'copy' })
     frames.flush()
     expect(getOverlay()!.style.cursor).toBe('copy')
