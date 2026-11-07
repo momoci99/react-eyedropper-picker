@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import {
   ColorPicker,
+  useColorHistory,
   useEyeDropper,
   type ColorPickerTheme,
 } from 'react-eyedropper-picker'
@@ -24,6 +25,8 @@ export const App = () => {
   const [photo] = useState(() => toDataUrl(drawPixelArt))
   const photoRef = useRef<HTMLImageElement>(null)
   const { isSupported: nativeSupported } = useEyeDropper()
+  // One history for the loupe card and the picker, kept across reloads.
+  const history = useColorHistory({ storageKey: 'rep-demo-history' })
   const loupe = useLoupeEyeDropper({
     source: photoRef,
     loupe: { sound: true, haptics: true },
@@ -48,14 +51,15 @@ export const App = () => {
         </nav>
       </header>
 
-      <LoupeDemo onPick={setColor} />
+      <LoupeDemo onPick={setColor} history={history} />
 
       <section className="card picker-demo" aria-labelledby="picker-title">
         <header className="card-header">
           <h2 id="picker-title">Color picker</h2>
           <p className="muted">
             Colors picked with the loupe land here too. The eye dropper button
-            takes any <code>eyeDropper</code>.
+            takes any <code>eyeDropper</code>. Picks show up under the input (
+            <code>history</code>) and stay after a reload.
           </p>
         </header>
         <div className="segmented" role="radiogroup" aria-label="Eye dropper">
@@ -95,6 +99,7 @@ export const App = () => {
             theme={theme}
             value={color}
             onChange={setColor}
+            history={history}
             eyeDropper={dropper === 'loupe' ? loupe : undefined}
           />
           <div className="picker-info">

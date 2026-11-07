@@ -1,6 +1,13 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import {
+  act,
+  fireEvent,
+  render,
+  renderHook,
+  screen,
+  within,
+} from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ColorPicker } from '../src'
+import { ColorPicker, useColorHistory } from '../src'
 
 afterEach(() => {
   delete (window as any).EyeDropper
@@ -98,5 +105,109 @@ describe('ColorPicker', () => {
     const { rerender } = render(<ColorPicker value="#ff0000" />)
     rerender(<ColorPicker value="#00ff00" />)
     expect(screen.getByLabelText('Hex color')).toHaveValue('#00ff00')
+  })
+})
+
+describe('ColorPicker history', () => {
+  afterEach(() => localStorage.clear())
+
+  /** Eye dropper that picks each color in turn. */
+  const dropper = (...colors: string[]) => ({
+    open: vi.fn(async () => ({ sRGBHex: colors.shift() ?? '#000000' })),
+    isSupported: true,
+  })
+
+  const pick = async () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Pick a color' }))
+    await act(async () => {})
+  }
+
+  const swatches = () =>
+    within(screen.getByRole('group', { name: 'Recent colors' }))
+      .getAllByRole('button')
+      .map((b) => b.getAttribute('aria-label'))
+
+  it('is off by default', async () => {
+    render(<ColorPicker eyeDropper={dropper('#123456')} />)
+    await pick()
+    expect(screen.queryByRole('group', { name: 'Recent colors' })).toBeNull()
+  })
+
+  it('shows nothing until the first pick', () => {
+    render(<ColorPicker history eyeDropper={dropper()} />)
+    expect(screen.queryByRole('group', { name: 'Recent colors' })).toBeNull()
+  })
+
+  it('adds eye dropper picks, newest first', async () => {
+    render(<ColorPicker history eyeDropper={dropper('#111111', '#222222')} />)
+    await pick()
+    await pick()
+    expect(swatches()).toEqual(['#222222', '#111111'])
+  })
+
+  it('adds nothing for a cancelled pick or a typed color', async () => {
+    const eyeDropper = {
+      open: vi.fn(async () => {
+        throw new DOMException('cancelled', 'AbortError')
+      }),
+      isSupported: true,
+    }
+    render(
+      <ColorPicker
+        history={{ defaultColors: ['#111'] }}
+        eyeDropper={eyeDropper}
+      />
+    )
+    await pick()
+    fireEvent.change(screen.getByLabelText('Hex color'), {
+      target: { value: '#abcdef' },
+    })
+    expect(swatches()).toEqual(['#111111'])
+  })
+
+  it('applies a swatch on click and marks the current color', () => {
+    const onChange = vi.fn()
+    render(
+      <ColorPicker
+        defaultValue="#111111"
+        onChange={onChange}
+        history={{ defaultColors: ['#111111', '#222222'] }}
+      />
+    )
+    const [first, second] = within(
+      screen.getByRole('group', { name: 'Recent colors' })
+    ).getAllByRole('button')
+    expect(first!.style.boxShadow).toContain('0 0 0 3px')
+    expect(second!.style.boxShadow).toContain('inset')
+    fireEvent.click(second!)
+    expect(onChange).toHaveBeenLastCalledWith('#222222')
+    expect(screen.getByLabelText('Hex color')).toHaveValue('#222222')
+  })
+
+  it('passes options to useColorHistory', async () => {
+    render(
+      <ColorPicker
+        history={{ max: 1, storageKey: 'picker' }}
+        eyeDropper={dropper('#111111', '#222222')}
+      />
+    )
+    await pick()
+    await pick()
+    expect(swatches()).toEqual(['#222222'])
+    expect(JSON.parse(localStorage.getItem('picker')!)).toEqual(['#222222'])
+  })
+
+  it('shares a useColorHistory result', async () => {
+    const { result } = renderHook(() => useColorHistory())
+    const { rerender } = render(
+      <ColorPicker history={result.current} eyeDropper={dropper('#111111')} />
+    )
+    await pick()
+    expect(result.current.colors).toEqual(['#111111'])
+    act(() => result.current.add('#333333'))
+    rerender(
+      <ColorPicker history={result.current} eyeDropper={dropper('#111111')} />
+    )
+    expect(swatches()).toEqual(['#333333', '#111111'])
   })
 })

@@ -6,6 +6,11 @@ import {
 import { SaturationPanel } from './SaturationPanel'
 import { HueSlider } from './HueSlider'
 import { EyeDropperButton } from './EyeDropperButton'
+import {
+  useColorHistory,
+  type UseColorHistoryOptions,
+  type UseColorHistoryResult,
+} from '../hooks/useColorHistory'
 import { normalizeHex } from '../utils/color'
 import { themeColorScheme, themeVar, type ColorPickerTheme } from '../theme'
 
@@ -22,6 +27,14 @@ export type ColorPickerProps = UseColorPickerOptions & {
    * Colors can also be set with `--rep-*` CSS variables.
    */
   theme?: ColorPickerTheme
+  /**
+   * Show recently picked colors under the input; click one to use it.
+   * Eye dropper picks are added. `true` keeps them in memory; options
+   * (e.g. `storageKey`) are passed to `useColorHistory`; a
+   * `useColorHistory()` result shares one history with your own code.
+   * Default false.
+   */
+  history?: boolean | UseColorHistoryOptions | UseColorHistoryResult
   className?: string
   style?: CSSProperties
 }
@@ -30,12 +43,21 @@ export const ColorPicker = ({
   showEyeDropper = true,
   showInput = true,
   theme = 'light',
+  history = false,
   className,
   style,
   ...options
 }: ColorPickerProps) => {
   const { hex, hsv, setHex, setHsv, pickFromScreen, isEyeDropperSupported } =
     useColorPicker(options)
+
+  const external = isHistoryResult(history) ? history : null
+  const own = useColorHistory(
+    typeof history === 'object' && !isHistoryResult(history)
+      ? history
+      : undefined
+  )
+  const recent = history ? (external ?? own) : null
 
   // Local draft so typing partial hex doesn't get overwritten
   const [draft, setDraft] = useState(hex)
@@ -104,7 +126,11 @@ export const ColorPicker = ({
         )}
         {showEyeDropper && isEyeDropperSupported && (
           <EyeDropperButton
-            onClick={() => void pickFromScreen()}
+            onClick={() =>
+              void pickFromScreen().then((picked) => {
+                if (picked) recent?.add(picked)
+              })
+            }
             style={{ borderColor: themeVar('border', theme) }}
             // A custom eye dropper (e.g. the loupe) may not pick from the screen.
             {...(options.eyeDropper && {
@@ -114,6 +140,65 @@ export const ColorPicker = ({
           />
         )}
       </div>
+      {recent && recent.colors.length > 0 && (
+        <RecentColors
+          colors={recent.colors}
+          current={hex}
+          theme={theme}
+          onSelect={setHex}
+        />
+      )}
     </div>
   )
 }
+
+const isHistoryResult = (
+  history: ColorPickerProps['history']
+): history is UseColorHistoryResult =>
+  typeof history === 'object' && 'add' in history
+
+type RecentColorsProps = {
+  colors: readonly string[]
+  current: string
+  theme: ColorPickerTheme
+  onSelect: (hex: string) => void
+}
+
+const RecentColors = ({
+  colors,
+  current,
+  theme,
+  onSelect,
+}: RecentColorsProps) => (
+  <div
+    role="group"
+    aria-label="Recent colors"
+    style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(20px, 1fr))',
+      gap: 6,
+    }}
+  >
+    {colors.map((color) => (
+      <button
+        key={color}
+        type="button"
+        aria-label={color}
+        title={color}
+        onClick={() => onSelect(color)}
+        style={{
+          aspectRatio: '1',
+          padding: 0,
+          border: 'none',
+          borderRadius: 4,
+          background: color,
+          boxShadow:
+            color === current
+              ? `0 0 0 2px ${themeVar('bg', theme)}, 0 0 0 3px ${themeVar('fg', theme)}`
+              : `inset 0 0 0 1px ${themeVar('border', theme)}`,
+          cursor: 'pointer',
+        }}
+      />
+    ))}
+  </div>
+)

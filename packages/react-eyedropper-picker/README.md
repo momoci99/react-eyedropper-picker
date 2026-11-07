@@ -32,6 +32,7 @@ function App() {
 | `eyeDropper`     | `EyeDropperLike`        | native      | Picker behind the button (see Loupe)          |
 | `showInput`      | `boolean`               | `true`      | Show hex input                                |
 | `theme`          | `'light' \| 'dark' \| 'auto'` | `'light'` | `'auto'` follows the OS (see Theming) |
+| `history`        | `boolean \| UseColorHistoryOptions \| UseColorHistoryResult` | `false` | Recent picks under the input (see Color history) |
 | `className`      | `string`                | –           | Root class name                               |
 | `style`          | `CSSProperties`         | –           | Root inline style (merged with defaults)      |
 
@@ -59,6 +60,35 @@ function App() {
 | `--rep-label-fg`     | Hex label text                   | `#fff`                                      |
 
 The loupe is added to `<body>`, so set its variables on `:root` (or pass `loupe.className`).
+
+### Color history
+
+`history` shows the colors picked with the eye dropper as swatches under the input; click one to use it again. Dragging and typing don't add to it.
+
+```tsx
+<ColorPicker history />                                       // in memory
+<ColorPicker history={{ storageKey: 'my-app-colors', max: 12 }} /> // kept in localStorage
+```
+
+`useColorHistory` is the same history as a hook, for your own swatches or to share one history between pickers:
+
+```tsx
+import { ColorPicker, useColorHistory } from 'react-eyedropper-picker'
+
+const history = useColorHistory({ storageKey: 'my-app-colors' })
+// history.colors: newest first; history.add(hex), history.remove(hex), history.clear()
+
+<ColorPicker history={history} />
+<ImageColorPicker src="/photo.jpg" onPick={(c) => history.add(c.sRGBHex)} />
+```
+
+| Option          | Default | Description                                                                       |
+| --------------- | ------- | --------------------------------------------------------------------------------- |
+| `max`           | `8`     | Most colors kept                                                                  |
+| `storageKey`    | –       | Save to `localStorage` under this key, synced across tabs and pickers with the key |
+| `defaultColors` | `[]`    | Starting colors, used while nothing is stored                                     |
+
+With `storageKey`, the server renders `defaultColors` and the client reads storage while hydrating. If storage is blocked or full, the history still works for the page's lifetime.
 
 ### Headless hook
 
