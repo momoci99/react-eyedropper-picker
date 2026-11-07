@@ -11,6 +11,10 @@ import { drawPixelArt, toDataUrl } from './samples'
 
 type Dropper = 'loupe' | 'native'
 
+/** Shows transparency in the result swatch. */
+const checkered = (color: string) =>
+  `linear-gradient(${color}, ${color}), repeating-conic-gradient(#ccc 0 25%, #fff 0 50%) 0 0 / 12px 12px`
+
 const THEMES: { id: ColorPickerTheme; label: string }[] = [
   { id: 'auto', label: 'Auto (OS)' },
   { id: 'light', label: 'Light' },
@@ -21,6 +25,7 @@ export const App = () => {
   const [color, setColor] = useState('#6366f1')
   const [dropper, setDropper] = useState<Dropper>('loupe')
   const [theme, setTheme] = useState<ColorPickerTheme>('auto')
+  const [alpha, setAlpha] = useState(false)
   // Client-only demo: drawing in the initializer is fine.
   const [photo] = useState(() => toDataUrl(drawPixelArt))
   const photoRef = useRef<HTMLImageElement>(null)
@@ -94,9 +99,22 @@ export const App = () => {
             </button>
           ))}
         </div>
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={alpha}
+            onChange={(e) => {
+              setAlpha(e.target.checked)
+              // Back to #rrggbb when alpha goes off.
+              if (!e.target.checked) setColor((c) => c.slice(0, 7))
+            }}
+          />
+          Opacity <code>alpha</code>
+        </label>
         <div className="picker-row">
           <ColorPicker
             theme={theme}
+            alpha={alpha}
             value={color}
             onChange={setColor}
             history={history}
@@ -106,7 +124,7 @@ export const App = () => {
             <div className="result">
               <div
                 className="result-swatch large"
-                style={{ background: color }}
+                style={{ background: checkered(color) }}
               />
               <code className="result-hex">{color}</code>
             </div>

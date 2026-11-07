@@ -5,7 +5,11 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react'
-import { normalizeHex } from '../utils/color'
+import { normalizeHex, normalizeHexAlpha } from '../utils/color'
+
+/** `#rrggbb`, or `#rrggbbaa` for colors with alpha digits. */
+const normalizeColor = (hex: string) =>
+  normalizeHex(hex) ?? normalizeHexAlpha(hex)
 
 export type UseColorHistoryOptions = {
   /** Most colors kept, newest first. Default 8. */
@@ -22,7 +26,7 @@ export type UseColorHistoryOptions = {
 }
 
 export type UseColorHistoryResult = {
-  /** Lowercase `#rrggbb`, newest first, no duplicates. */
+  /** Lowercase `#rrggbb` (`#rrggbbaa` with alpha), newest first, no duplicates. */
   colors: readonly string[]
   /** Puts a color first. Moves it there if already kept. Ignores invalid hex. */
   add: (hex: string) => void
@@ -43,7 +47,7 @@ const resolveMax = (max: number | undefined) =>
 const clean = (list: readonly unknown[], max: number): readonly string[] => {
   const out: string[] = []
   for (const item of list) {
-    const hex = typeof item === 'string' ? normalizeHex(item) : null
+    const hex = typeof item === 'string' ? normalizeColor(item) : null
     if (hex && !out.includes(hex)) out.push(hex)
     if (out.length === max) break
   }
@@ -172,7 +176,7 @@ export const useColorHistory = ({
 
   const add = useCallback(
     (hex: string) => {
-      const color = normalizeHex(hex)
+      const color = normalizeColor(hex)
       if (!color) return
       update((prev) =>
         prev[0] === color ? prev : clean([color, ...prev], max)
@@ -182,7 +186,7 @@ export const useColorHistory = ({
   )
   const remove = useCallback(
     (hex: string) => {
-      const color = normalizeHex(hex)
+      const color = normalizeColor(hex)
       if (!color) return
       update((prev) =>
         prev.includes(color) ? prev.filter((c) => c !== color) : prev

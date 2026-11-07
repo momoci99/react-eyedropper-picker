@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { hexToHsv, hsvToHex, normalizeHex, type HSV } from '../utils/color'
+import {
+  hexToHsv,
+  hexToRgba,
+  hsvToHex,
+  hsvToRgb,
+  normalizeHex,
+  rgbaToHex,
+  rgbToHsv,
+  type HSV,
+} from '../utils/color'
 import { useEyeDropper, type EyeDropperLike } from './useEyeDropper'
 
 export type UseColorPickerOptions = {
@@ -7,8 +16,17 @@ export type UseColorPickerOptions = {
   value?: string
   /** Initial value when uncontrolled. Defaults to `#000000`. */
   defaultValue?: string
-  /** Called with normalized lowercase `#rrggbb`. */
+  /**
+   * Called with normalized lowercase `#rrggbb`, or `#rrggbbaa` with
+   * `alpha`.
+   */
   onChange?: (hex: string) => void
+  /**
+   * Opacity support. Values become `#rrggbbaa` (always 8 digits; `ff` is
+   * opaque), and `value`, `defaultValue` and `setHex` also take `#rgba` and
+   * `#rrggbbaa`. Default false.
+   */
+  alpha?: boolean
   /**
    * Eye dropper used by `pickFromScreen`. Default: the native EyeDropper
    * (`useEyeDropper()`). Pass `useLoupeEyeDropper()` from
@@ -18,16 +36,40 @@ export type UseColorPickerOptions = {
 }
 
 export type UseColorPickerResult = {
+  /** `#rrggbb`, or `#rrggbbaa` with `alpha`. */
   hex: string
   hsv: HSV
+  /** 0 (transparent) to 1 (opaque). Always 1 without `alpha`. */
+  alpha: number
   setHex: (hex: string) => boolean
   setHsv: (hsv: HSV) => void
-  /** Opens the eye dropper and applies the picked color. Returns the hex, or null if cancelled. */
+  /** Sets the opacity, 0-1. Ignored without `alpha`. */
+  setAlpha: (alpha: number) => void
+  /**
+   * Opens the eye dropper and applies the picked color (opaque). Returns the
+   * new hex, or null if cancelled.
+   */
   pickFromScreen: () => Promise<string | null>
   isEyeDropperSupported: boolean
 }
 
 const FALLBACK = '#000000'
+
+type Parsed = { hsv: HSV; alpha: number }
+
+/** Parses a hex for the current mode; null if invalid. */
+const parse = (input: string, alpha: boolean): Parsed | null => {
+  if (!alpha) {
+    const hsv = hexToHsv(input)
+    return hsv && { hsv, alpha: 1 }
+  }
+  const rgba = hexToRgba(input)
+  return rgba && { hsv: rgbToHsv(rgba), alpha: rgba.a }
+}
+
+/** The hex `onChange` gets: `#rrggbb`, or `#rrggbbaa` with alpha. */
+const format = (hsv: HSV, a: number, alpha: boolean) =>
+  alpha ? rgbaToHex({ ...hsvToRgb(hsv), a }) : hsvToHex(hsv)
 
 /**
  * Headless color picker state. Keeps HSV internally so hue/saturation
@@ -38,34 +80,63 @@ export const useColorPicker = ({
   defaultValue = FALLBACK,
   onChange,
   eyeDropper,
+  alpha: withAlpha = false,
 }: UseColorPickerOptions = {}): UseColorPickerResult => {
-  const initial = normalizeHex(value ?? defaultValue) ?? FALLBACK
-  const [hsv, setHsvState] = useState<HSV>(() => hexToHsv(initial)!)
-  const hex = hsvToHex(hsv)
+  const [state, setState] = useState<Parsed>(
+    () => parse(value ?? defaultValue, withAlpha) ?? parse(FALLBACK, withAlpha)!
+  )
+  const alpha = withAlpha ? state.alpha : 1
+  const hex = format(state.hsv, alpha, withAlpha)
 
   const onChangeRef = useRef(onChange)
   onChangeRef.current = onChange
+  const alphaRef = useRef(withAlpha)
+  alphaRef.current = withAlpha
+  /** Latest state, also between a set and the re-render. */
+  const stateRef = useRef(state)
+  stateRef.current = state
 
   // Sync controlled value without clobbering hue when hex already matches
   useEffect(() => {
     if (value === undefined) return
-    const next = normalizeHex(value)
+    const next = parse(value, withAlpha)
     if (!next) return
-    setHsvState((prev) => (hsvToHex(prev) === next ? prev : hexToHsv(next)!))
-  }, [value])
+    setState((prev) =>
+      format(prev.hsv, prev.alpha, withAlpha) ===
+      format(next.hsv, next.alpha, withAlpha)
+        ? prev
+        : next
+    )
+  }, [value, withAlpha])
 
-  const setHsv = useCallback((next: HSV) => {
-    setHsvState(next)
-    onChangeRef.current?.(hsvToHex(next))
+  const update = useCallback((next: Parsed) => {
+    stateRef.current = next
+    setState(next)
+    onChangeRef.current?.(format(next.hsv, next.alpha, alphaRef.current))
   }, [])
 
-  const setHex = useCallback((input: string) => {
-    const next = normalizeHex(input)
-    if (!next) return false
-    setHsvState(hexToHsv(next)!)
-    onChangeRef.current?.(next)
-    return true
-  }, [])
+  const setHsv = useCallback(
+    (hsv: HSV) => update({ hsv, alpha: stateRef.current.alpha }),
+    [update]
+  )
+
+  const setAlpha = useCallback(
+    (a: number) => {
+      if (!alphaRef.current) return
+      update({ hsv: stateRef.current.hsv, alpha: Math.min(1, Math.max(0, a)) })
+    },
+    [update]
+  )
+
+  const setHex = useCallback(
+    (input: string) => {
+      const next = parse(input, alphaRef.current)
+      if (!next) return false
+      update(next)
+      return true
+    },
+    [update]
+  )
 
   const native = useEyeDropper()
   const { open, isSupported } = eyeDropper ?? native
@@ -76,19 +147,23 @@ export const useColorPicker = ({
       // Some browsers return `rgba(...)` instead of hex
       const picked = normalizeHex(sRGBHex) ?? rgbaStringToHex(sRGBHex)
       if (!picked) return null
-      setHex(picked)
-      return picked
+      // Screen pixels are opaque.
+      const next = parse(picked, alphaRef.current)!
+      update(next)
+      return format(next.hsv, next.alpha, alphaRef.current)
     } catch (e) {
       if (e instanceof DOMException && e.name === 'AbortError') return null
       throw e
     }
-  }, [open, setHex])
+  }, [open, update])
 
   return {
     hex,
-    hsv,
+    hsv: state.hsv,
+    alpha,
     setHex,
     setHsv,
+    setAlpha,
     pickFromScreen,
     isEyeDropperSupported: isSupported,
   }

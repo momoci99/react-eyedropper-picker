@@ -1,4 +1,6 @@
 export type RGB = { r: number; g: number; b: number }
+/** RGB plus `a`: alpha, 0 (transparent) to 1 (opaque). */
+export type RGBA = RGB & { a: number }
 /** h: 0-360, s: 0-100, v: 0-100 */
 export type HSV = { h: number; s: number; v: number }
 
@@ -74,3 +76,38 @@ export const hexToHsv = (hex: string): HSV | null => {
 }
 
 export const hsvToHex = (hsv: HSV): string => rgbToHex(hsvToRgb(hsv))
+
+const HEX_ALPHA_RE = /^#?([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i
+
+/**
+ * Normalizes `#abc`, `#abcd`, `#aabbcc` or `#aabbccdd` to lowercase
+ * `#rrggbbaa`. Without alpha digits the color is opaque (`ff`). Returns
+ * null if invalid.
+ */
+export const normalizeHexAlpha = (hex: string): string | null => {
+  const match = HEX_ALPHA_RE.exec(hex.trim())
+  if (!match) return null
+  let body = match[1]!.toLowerCase()
+  if (body.length <= 4) {
+    body = body
+      .split('')
+      .map((c) => c + c)
+      .join('')
+  }
+  return `#${body.length === 6 ? body + 'ff' : body}`
+}
+
+/** Parses any `normalizeHexAlpha` input. `a` is 0-1. */
+export const hexToRgba = (hex: string): RGBA | null => {
+  const normalized = normalizeHexAlpha(hex)
+  if (!normalized) return null
+  const rgb = hexToRgb(normalized.slice(0, 7))!
+  return { ...rgb, a: parseInt(normalized.slice(7), 16) / 255 }
+}
+
+/** `#rrggbbaa`; alpha is rounded to 8 bits. */
+export const rgbaToHex = ({ a, ...rgb }: RGBA): string =>
+  rgbToHex(rgb) +
+  Math.round(clamp(a, 0, 1) * 255)
+    .toString(16)
+    .padStart(2, '0')

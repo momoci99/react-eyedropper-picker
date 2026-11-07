@@ -27,7 +27,8 @@ function App() {
 | ---------------- | ----------------------- | ----------- | --------------------------------------------- |
 | `value`          | `string`                | –           | Controlled hex value                          |
 | `defaultValue`   | `string`                | `'#000000'` | Initial value when uncontrolled               |
-| `onChange`       | `(hex: string) => void` | –           | Called with normalized `#rrggbb`              |
+| `onChange`       | `(hex: string) => void` | –           | Called with normalized `#rrggbb` (`#rrggbbaa` with `alpha`) |
+| `alpha`          | `boolean`               | `false`     | Opacity slider; values become `#rrggbbaa` (see Opacity) |
 | `showEyeDropper` | `boolean`               | `true`      | Show eye dropper button (when supported)      |
 | `eyeDropper`     | `EyeDropperLike`        | native      | Picker behind the button (see Loupe)          |
 | `showInput`      | `boolean`               | `true`      | Show hex input                                |
@@ -37,7 +38,22 @@ function App() {
 | `className`      | `string`                | –           | Root class name                               |
 | `style`          | `CSSProperties`         | –           | Root inline style (merged with defaults)      |
 
-On touch screens the thumb covers the handle, so while you drag the panel or hue slider by touch, a bubble above the finger shows the color under it. Mouse and pen don't show it. `SaturationPanel` and `HueSlider` take `touchBubble` too.
+On touch screens the thumb covers the handle, so while you drag the panel or a slider by touch, a bubble above the finger shows the color under it. Mouse and pen don't show it. `SaturationPanel`, `HueSlider` and `AlphaSlider` take `touchBubble` too.
+
+### Opacity
+
+`alpha` adds an opacity slider under the hue slider.
+
+```tsx
+const [color, setColor] = useState('#3b82f680')
+<ColorPicker alpha value={color} onChange={setColor} />
+```
+
+- Values are always `#rrggbbaa`: `ff` is opaque, `00` transparent. `#336699` comes back as `#336699ff`.
+- `value`, `defaultValue` and the input take `#rgb`, `#rgba`, `#rrggbb` and `#rrggbbaa`; no alpha digits means opaque.
+- The eye dropper sets the picked color opaque: pixels on screen have no transparency.
+- The preview and the history swatches show transparency over a checkerboard.
+- Headless: `useColorPicker({ alpha: true })` adds `alpha` (0-1) and `setAlpha`; `AlphaSlider` is the slider (`color`, `alpha`, `onChange`).
 
 ### Theming
 
@@ -95,7 +111,7 @@ With `storageKey`, the server renders `defaultColors` and the client reads stora
 
 ### Headless hook
 
-Build your own UI with `useColorPicker` plus the `SaturationPanel` / `HueSlider` / `EyeDropperButton` building blocks.
+Build your own UI with `useColorPicker` plus the `SaturationPanel` / `HueSlider` / `AlphaSlider` / `EyeDropperButton` building blocks.
 
 ```tsx
 import { useColorPicker, SaturationPanel, HueSlider, EyeDropperButton } from 'react-eyedropper-picker'
@@ -278,6 +294,8 @@ useLoupeEyeDropper({
 ### Color utilities
 
 `normalizeHex`, `isValidHex`, `hexToRgb`, `rgbToHex`, `rgbToHsv`, `hsvToRgb`, `hexToHsv`, `hsvToHex`.
+
+With alpha: `normalizeHexAlpha` (any of `#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa` → `#rrggbbaa`), `hexToRgba`, `rgbaToHex` and the `RGBA` type (`a` is 0-1).
 
 ## Browser support
 
