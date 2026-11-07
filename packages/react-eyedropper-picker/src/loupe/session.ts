@@ -3,9 +3,9 @@ import {
   clientToSourcePixel,
   sourcePixelToClient,
   loupeCenterAbove,
-  type DisplayRect,
   type Point,
 } from './geometry'
+import { sourceLayout, type SourceLayout } from './layout'
 import {
   clampMagnification,
   keyMagnification,
@@ -17,6 +17,7 @@ import {
 } from './magnification'
 import type { LoupeFeedback } from './feedback'
 import type { LoupeSource, PixelBuffer, SampleSize } from './pixels'
+import { reducedMotionQuery } from './motion'
 import { createTouchTracker } from './touch'
 import { createLoupeView, pixelHex, type LoupeShape } from './view'
 
@@ -68,6 +69,12 @@ export type LoupeSessionOptions = {
    * moves the loupe above the pointer.
    */
   cursor?: string
+  /**
+   * Cover the source with `buffer` while open, so what the loupe shows
+   * matches the page. For a playing `<video>`: picking happens on the frame
+   * read at open; playback itself is not touched.
+   */
+  freeze?: boolean
   signal?: AbortSignal
 }
 
@@ -123,6 +130,7 @@ export const startLoupeSession = (
   const { width: srcWidth, height: srcHeight } = buffer
   const doc = source.ownerDocument
   const win = doc.defaultView!
+  const reducedMotion = reducedMotionQuery(win)
 
   let resolve!: (r: LoupePickResult) => void
   let reject!: (e: unknown) => void
@@ -134,7 +142,7 @@ export const startLoupeSession = (
   let settled = false
   let magnification = clampMagnification(options.magnification, config)
   let wheelRemainder = 0
-  let rect: DisplayRect = source.getBoundingClientRect()
+  let layout: SourceLayout = sourceLayout(source, srcWidth, srcHeight)
   /** Source pixel under the loupe, or null when outside the source. */
   let pixel: Point | null = clampPixel(
     Math.floor(srcWidth / 2),
@@ -143,7 +151,13 @@ export const startLoupeSession = (
     srcHeight
   )
   /** Client point the loupe is centered on. */
-  let anchor = sourcePixelToClient(pixel.x, pixel.y, rect, srcWidth, srcHeight)
+  let anchor = sourcePixelToClient(
+    pixel.x,
+    pixel.y,
+    layout.rect,
+    srcWidth,
+    srcHeight
+  )
   let frame = 0
   let lastCursor = ''
   /** Last pixel sent to `onAim`. */
@@ -184,6 +198,9 @@ export const startLoupeSession = (
     return { result, setMagnification: () => {}, cancel: () => {} }
   }
   const loupe = view.element
+  const frozen = options.freeze ? createFrozenFrame(doc, buffer) : null
+  if (frozen) overlay.append(frozen.element)
+  frozen?.place(layout)
   overlay.append(loupe)
 
   // ── Drawing ──
@@ -248,12 +265,19 @@ export const startLoupeSession = (
   const moveTo = (p: Point) => {
     pixel = p
     aimed = true
-    anchor = sourcePixelToClient(p.x, p.y, rect, srcWidth, srcHeight)
+    anchor = sourcePixelToClient(p.x, p.y, layout.rect, srcWidth, srcHeight)
     schedule()
   }
 
   const pixelAt = (clientX: number, clientY: number) =>
-    clientToSourcePixel(clientX, clientY, rect, srcWidth, srcHeight)
+    clientToSourcePixel(
+      clientX,
+      clientY,
+      layout.rect,
+      srcWidth,
+      srcHeight,
+      layout.box
+    )
 
   // ── Closing ──
   const listeners = new AbortController()
@@ -266,6 +290,10 @@ export const startLoupeSession = (
     view.destroy()
     // The page is usable at once; the loupe shrinks out on its own.
     if (loupe.isConnected) doc.body.append(loupe)
+    // The frozen frame fades into the live video instead of jumping.
+    if (frozen && options.animate !== false && !reducedMotion()) {
+      frozen.fadeOut(loupe)
+    }
     overlay.remove()
     view.unmount()
     previousFocus?.focus?.()
@@ -428,7 +456,8 @@ export const startLoupeSession = (
   )
 
   const updateRect = () => {
-    rect = source.getBoundingClientRect()
+    layout = sourceLayout(source, srcWidth, srcHeight)
+    frozen?.place(layout)
   }
   win.addEventListener('resize', updateRect, passive)
   win.addEventListener('scroll', updateRect, { ...passive, capture: true })
@@ -456,5 +485,61 @@ export const startLoupeSession = (
       if (next !== magnification) showMagnification(next)
     },
     cancel,
+  }
+}
+
+/** Fade from the frozen frame back to the live video. */
+const FROZEN_FADE_MS = 150
+
+/**
+ * The pixels read at open, drawn where the source shows them. Clipped to
+ * the content box, as `object-fit: cover` would be.
+ */
+const createFrozenFrame = (doc: Document, buffer: PixelBuffer) => {
+  const element = doc.createElement('div')
+  element.setAttribute('aria-hidden', 'true')
+  Object.assign(element.style, {
+    position: 'fixed',
+    zIndex: '2147483647',
+    overflow: 'hidden',
+    pointerEvents: 'none',
+  })
+  const canvas = doc.createElement('canvas')
+  canvas.width = buffer.width
+  canvas.height = buffer.height
+  canvas.style.position = 'absolute'
+  const ctx = canvas.getContext('2d')
+  if (ctx) {
+    const image = ctx.createImageData(buffer.width, buffer.height)
+    image.data.set(buffer.data)
+    ctx.putImageData(image, 0, 0)
+  }
+  element.append(canvas)
+  const px = (n: number) => `${n}px`
+  return {
+    element,
+    /** Moves out of the overlay, just under `loupe`, and fades away. */
+    fadeOut: (loupe: HTMLElement) => {
+      if (typeof element.animate !== 'function') return
+      loupe.before(element)
+      element.animate([{ opacity: 1 }, { opacity: 0 }], {
+        duration: FROZEN_FADE_MS,
+        easing: 'ease-out',
+      }).onfinish = () => element.remove()
+    },
+    place: ({ box, rect }: SourceLayout) => {
+      Object.assign(element.style, {
+        left: px(box.left),
+        top: px(box.top),
+        width: px(box.width),
+        height: px(box.height),
+      })
+      Object.assign(canvas.style, {
+        left: px(rect.left - box.left),
+        top: px(rect.top - box.top),
+        width: px(rect.width),
+        height: px(rect.height),
+      })
+    },
   }
 }

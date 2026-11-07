@@ -1,9 +1,5 @@
-import {
-  clientToSourcePixel,
-  loupeCenterAbove,
-  type DisplayRect,
-  type Point,
-} from './geometry'
+import { clientToSourcePixel, loupeCenterAbove, type Point } from './geometry'
+import { sourceLayout, type SourceLayout } from './layout'
 import {
   clampMagnification,
   magnificationDetent,
@@ -103,7 +99,7 @@ export const attachLoupeHover = (options: LoupeHoverOptions): LoupeHover => {
   let destroyed = false
   let magnification = clampMagnification(options.magnification, config)
   let wheelRemainder = 0
-  let rect: DisplayRect = { left: 0, top: 0, width: 0, height: 0 }
+  let layout: SourceLayout | null = null
   let pixel: Point | null = null
   let anchor: Point = { x: 0, y: 0 }
   let frame = 0
@@ -185,7 +181,7 @@ export const attachLoupeHover = (options: LoupeHoverOptions): LoupeHover => {
   const show = () => {
     if (visible || !view) return
     visible = true
-    rect = source.getBoundingClientRect()
+    measure()
     view.mount(doc.body)
     // By default hide the cursor: the loupe center is the cursor.
     cursor = source.style.cursor
@@ -203,8 +199,21 @@ export const attachLoupeHover = (options: LoupeHoverOptions): LoupeHover => {
     source.style.cursor = cursor
   }
 
+  const measure = () => {
+    if (buffer) layout = sourceLayout(source, buffer.width, buffer.height)
+  }
+
   const pixelAt = (x: number, y: number) =>
-    buffer ? clientToSourcePixel(x, y, rect, buffer.width, buffer.height) : null
+    buffer && layout
+      ? clientToSourcePixel(
+          x,
+          y,
+          layout.rect,
+          buffer.width,
+          buffer.height,
+          layout.box
+        )
+      : null
 
   const zoomTo = (value: number) => {
     if (value === magnification) return
@@ -254,7 +263,7 @@ export const attachLoupeHover = (options: LoupeHoverOptions): LoupeHover => {
   const onMouseMove = (e: PointerEvent) => {
     if (!ready()) return
     show()
-    rect = source.getBoundingClientRect()
+    measure()
     anchor = above
       ? loupeCenterAbove(e.clientX, e.clientY, size, CURSOR_GAP)
       : { x: e.clientX, y: e.clientY }
@@ -275,7 +284,7 @@ export const attachLoupeHover = (options: LoupeHoverOptions): LoupeHover => {
         // Not an active pointer (synthetic events): moves still arrive
         // while the finger stays on the source.
       }
-      if (!visible) rect = source.getBoundingClientRect()
+      if (!visible) measure()
       touch.down(e)
     },
     passive
@@ -345,7 +354,7 @@ export const attachLoupeHover = (options: LoupeHoverOptions): LoupeHover => {
   }
 
   const updateRect = () => {
-    if (visible) rect = source.getBoundingClientRect()
+    if (visible) measure()
   }
   win.addEventListener('resize', updateRect, passive)
   win.addEventListener('scroll', updateRect, { ...passive, capture: true })

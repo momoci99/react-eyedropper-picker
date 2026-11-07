@@ -8,18 +8,24 @@ export type DisplayRect = {
   height: number
 }
 
+const outside = (r: DisplayRect, x: number, y: number) =>
+  x < r.left || y < r.top || x >= r.left + r.width || y >= r.top + r.height
+
 /**
  * Maps a client (viewport) point to integer source pixel coordinates.
- * Assumes the source fills `rect` (no `object-fit` letterboxing).
- * Returns null if the point is outside `rect`.
+ * `rect` is where the pixels are drawn (see `fitRect`). Returns null
+ * outside `rect`, or outside `clip` (the visible box, for `object-fit:
+ * cover`).
  */
 export const clientToSourcePixel = (
   clientX: number,
   clientY: number,
   rect: DisplayRect,
   sourceWidth: number,
-  sourceHeight: number
+  sourceHeight: number,
+  clip?: DisplayRect
 ): Point | null => {
+  if (clip && outside(clip, clientX, clientY)) return null
   const dx = clientX - rect.left
   const dy = clientY - rect.top
   if (dx < 0 || dy < 0 || dx >= rect.width || dy >= rect.height) return null
@@ -135,4 +141,90 @@ export const loupeCenterAbove = (
 ): Point => {
   const above = y - gap - size / 2
   return { x, y: above - size / 2 >= 0 ? above : y + gap + size / 2 }
+}
+
+/** One axis of `object-position`: `fraction` of the free space plus `px`. */
+type PositionAxis = { fraction: number; px: number }
+
+const CENTER: PositionAxis = { fraction: 0.5, px: 0 }
+const KEYWORD: Record<string, number> = {
+  left: 0,
+  top: 0,
+  center: 0.5,
+  right: 1,
+  bottom: 1,
+}
+
+/** `50%`, `12px`, `calc(100% - 10px)` or a keyword; null otherwise. */
+const axisValue = (token: string): PositionAxis | null => {
+  const keyword = KEYWORD[token]
+  if (keyword !== undefined) return { fraction: keyword, px: 0 }
+  const calc = /^calc\((-?[\d.]+)% ([+-]) (-?[\d.]+)px\)$/.exec(token)
+  if (calc) {
+    const [, p = '', sign, n = ''] = calc
+    return {
+      fraction: parseFloat(p) / 100,
+      px: (sign === '-' ? -1 : 1) * parseFloat(n),
+    }
+  }
+  const n = parseFloat(token)
+  if (Number.isNaN(n)) return null
+  if (token.endsWith('%')) return { fraction: n / 100, px: 0 }
+  if (token.endsWith('px') || n === 0) return { fraction: 0, px: n }
+  return null
+}
+
+/**
+ * Parses a computed `object-position` (`x y`, each `%`, `px` or
+ * `calc(% ± px)`, which is how browsers report it) into x and y.
+ * Anything else falls back to centered, the default.
+ */
+export const parseObjectPosition = (
+  value: string
+): [PositionAxis, PositionAxis] => {
+  const tokens = value.match(/calc\([^)]*\)|\S+/g) ?? []
+  const [a = 'center', b = 'center'] = tokens
+  const x = axisValue(a)
+  const y = axisValue(b)
+  return tokens.length <= 2 && x && y ? [x, y] : [CENTER, CENTER]
+}
+
+const place = (free: number, axis: PositionAxis) =>
+  free * axis.fraction + axis.px
+
+/**
+ * Where a `width` x `height` picture is drawn inside `box` (the element's
+ * content box) for CSS `object-fit` and `object-position`. `fill` (the
+ * default for images and canvases) stretches it to `box`; videos default
+ * to `contain`, which letterboxes.
+ */
+export const fitRect = (
+  box: DisplayRect,
+  width: number,
+  height: number,
+  fit: string,
+  position: string
+): DisplayRect => {
+  if (!width || !height || !box.width || !box.height) return box
+  const contain = Math.min(box.width / width, box.height / height)
+  const scale =
+    fit === 'contain'
+      ? contain
+      : fit === 'cover'
+        ? Math.max(box.width / width, box.height / height)
+        : fit === 'none'
+          ? 1
+          : fit === 'scale-down'
+            ? Math.min(1, contain)
+            : 0
+  if (!scale) return box
+  const w = width * scale
+  const h = height * scale
+  const [x, y] = parseObjectPosition(position)
+  return {
+    left: box.left + place(box.width - w, x),
+    top: box.top + place(box.height - h, y),
+    width: w,
+    height: h,
+  }
 }

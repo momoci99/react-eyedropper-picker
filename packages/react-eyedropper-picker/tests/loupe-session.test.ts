@@ -19,6 +19,7 @@ import {
   touch,
   wheel,
   loupeLabel,
+  mockVideo,
   mockAnimate,
   mockNow,
   mockReducedMotion,
@@ -112,6 +113,119 @@ describe('startLoupeSession', () => {
     frames.flush()
     expect(loupeElement().style.transform).toBe('translate(-25px, 97px)')
     expect(labelText()).toBe(gridHex(3, 4))
+  })
+
+  it('picks through object-fit letterboxing', () => {
+    // 10x5 frame, contain in 100x100: drawn at y 25..75, bars above and below.
+    start({ source: mockVideo(10, 5), buffer: gridBuffer(10, 5) })
+    frames.flush()
+    pointer('pointermove', 35, 20)
+    frames.flush()
+    expect(loupeElement().style.display).toBe('none')
+    pointer('pointermove', 35, 45)
+    frames.flush()
+    expect(loupeElement().style.display).toBe('block')
+    expect(labelText()).toBe(gridHex(3, 2))
+  })
+
+  it('freeze: covers the source with the read pixels while open', () => {
+    const putImageData = vi.fn()
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+      function (this: HTMLCanvasElement) {
+        return {
+          canvas: this,
+          createImageData: (w: number, h: number) => ({
+            width: w,
+            height: h,
+            data: new Uint8ClampedArray(w * h * 4),
+          }),
+          putImageData,
+          drawImage: () => {},
+          fillRect: () => {},
+        } as never
+      }
+    )
+    const video = mockVideo(10, 5)
+    const s = start({ source: video, buffer: gridBuffer(10, 5), freeze: true })
+    const frozen = getOverlay()!.firstElementChild as HTMLElement
+    const canvas = frozen.querySelector('canvas')!
+    expect(frozen.getAttribute('aria-hidden')).toBe('true')
+    expect(frozen.style.pointerEvents).toBe('none')
+    expect([canvas.width, canvas.height]).toEqual([10, 5])
+    expect(putImageData).toHaveBeenCalled()
+    // Box 100x100; the frame letterboxed inside it.
+    expect(frozen.style.width).toBe('100px')
+    expect(canvas.style.top).toBe('25px')
+    expect(canvas.style.height).toBe('50px')
+
+    // Follows layout changes.
+    vi.mocked(video.getBoundingClientRect).mockReturnValue({
+      left: 20,
+      top: 0,
+      width: 200,
+      height: 100,
+    } as DOMRect)
+    window.dispatchEvent(new Event('resize'))
+    expect(frozen.style.left).toBe('20px')
+    expect(canvas.style.left).toBe('0px')
+    expect(canvas.style.width).toBe('200px')
+
+    s.result.catch(() => {})
+    s.cancel()
+    expect(frozen.isConnected).toBe(false)
+  })
+
+  it('freeze: fades the frame out on close, under the loupe', () => {
+    const animations = mockAnimate()
+    try {
+      const s = start({
+        source: mockVideo(10, 5),
+        buffer: gridBuffer(10, 5),
+        freeze: true,
+      })
+      const frozen = getOverlay()!.firstElementChild as HTMLElement
+      s.result.catch(() => {})
+      s.cancel()
+      expect(getOverlay()).toBeNull()
+      expect(frozen.parentElement).toBe(document.body)
+      // Under the shrinking loupe.
+      expect(frozen.nextElementSibling).not.toBeNull()
+      const fade = animations.find((a) => a.keyframes[0]?.opacity === 1)!
+      expect(fade.keyframes).toEqual([{ opacity: 1 }, { opacity: 0 }])
+      fade.finish()
+      expect(frozen.isConnected).toBe(false)
+    } finally {
+      resetAnimate()
+    }
+  })
+
+  it('freeze: no fade with animate off or reduced motion', () => {
+    mockAnimate()
+    try {
+      for (const options of [{ animate: false }, {}]) {
+        if (!('animate' in options)) mockReducedMotion(true)
+        const s = start({
+          source: mockVideo(10, 5),
+          buffer: gridBuffer(10, 5),
+          freeze: true,
+          ...options,
+        })
+        const frozen = getOverlay()!.firstElementChild as HTMLElement
+        s.result.catch(() => {})
+        s.cancel()
+        expect(frozen.isConnected).toBe(false)
+      }
+    } finally {
+      resetAnimate()
+      resetReducedMotion()
+    }
+  })
+
+  it('does not freeze by default', () => {
+    start()
+    expect(
+      getOverlay()!.querySelector('[aria-hidden="true"] canvas')
+    ).toBeNull()
   })
 
   it('hides the loupe outside the source', () => {

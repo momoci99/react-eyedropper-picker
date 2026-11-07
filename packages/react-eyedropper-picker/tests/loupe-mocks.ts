@@ -198,3 +198,37 @@ export const mockNow = () => {
     },
   }
 }
+
+/**
+ * A `<video>` with a `width` x `height` frame, shown at `boxWidth` x
+ * `boxHeight` CSS px from (0, 0). Videos default to `object-fit: contain`
+ * in browsers; jsdom has no UA styles, so it is set here.
+ */
+export const mockVideo = (
+  width = 10,
+  height = 10,
+  boxWidth = 100,
+  boxHeight = 100,
+  readyState = 4
+) => {
+  const video = document.createElement('video')
+  Object.defineProperties(video, {
+    videoWidth: { value: width },
+    videoHeight: { value: height },
+    readyState: { value: readyState },
+  })
+  video.style.objectFit = 'contain'
+  vi.spyOn(video, 'getBoundingClientRect').mockReturnValue({
+    left: 0,
+    top: 0,
+    width: boxWidth,
+    height: boxHeight,
+    right: boxWidth,
+    bottom: boxHeight,
+    x: 0,
+    y: 0,
+    toJSON: () => ({}),
+  })
+  document.body.append(video)
+  return video
+}

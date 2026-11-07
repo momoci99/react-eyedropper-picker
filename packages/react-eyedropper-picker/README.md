@@ -126,7 +126,7 @@ const { sRGBHex } = await open() // rejects with AbortError on cancel/close
 
 `open()` rejects with `NotSupportedError` where the browser has no EyeDropper API. Check `isSupported` first.
 
-### Loupe: pick from an image or canvas
+### Loupe: pick from an image, canvas or video
 
 `react-eyedropper-picker/loupe` adds a pixel-accurate magnifier that works in every browser. It is a separate entry, so apps that only use the base entry don't bundle it.
 
@@ -156,10 +156,11 @@ import { ImageColorPicker } from 'react-eyedropper-picker/loupe'
 - Keyboard: Tab to the image, Enter or Space opens the full-screen loupe (keys below).
 - Takes every `<img>` prop. `loupe` takes the options below plus `renderLabel(color)`, which replaces the hex label under the loupe.
 - `onPickError` gets read errors, such as `SecurityError` for a cross-origin image without CORS. Default: `console.error`.
+- CSS `object-fit`, `object-position`, border and padding are followed: the loupe picks where the picture is drawn, and letterbox bars pick nothing.
 
 #### `useLoupeEyeDropper`
 
-Picks once from an image or canvas, like the native EyeDropper: call `open()`, get a promise. The loupe covers the page until you pick or cancel.
+Picks once from an image, canvas or video, like the native EyeDropper: call `open()`, get a promise. The loupe covers the page until you pick or cancel.
 
 ```tsx
 import { useRef } from 'react'
@@ -198,6 +199,7 @@ function ImagePicker() {
 - `mode`: `'auto'` (default) uses the loupe when there is a `source`, else the native EyeDropper. `'native'` and `'loupe'` force one.
 - `loupe` options: `defaultMagnification` (8), `minMagnification` (1), `maxMagnification` (64), `magnificationSteps`, controlled `magnification` + `onMagnificationChange`, `size` (120), `shape` (`'circle'` | `'square'`), `grid` (true), `sampleSize` (1 | 3 | 5), `className`, `smoothing` (0), `animate` (true), `cursor` (`'none'`), `sound` (false), `haptics` (false).
 - Cross-origin images need CORS (`crossOrigin="anonymous"`), or `open()` rejects with `SecurityError`.
+- CSS `object-fit`, `object-position`, border and padding are followed, as with `ImageColorPicker`.
 - Focus returns to the element that was focused before `open()`. Don't disable that button while `isOpen`, or focus is lost (a disabled button can't take focus back).
 
 #### With `ColorPicker`
@@ -213,6 +215,23 @@ const dropper = useLoupeEyeDropper({ source: img })
 ```
 
 `useColorPicker({ eyeDropper })` does the same for headless pickers.
+
+#### Video
+
+`source` can be a `<video>`. `open()` picks from the frame showing at that moment: the frame covers the video until you pick or cancel, so what you aim at stays still. Playback is not touched (the video keeps playing and stays audible); pause it yourself if you want it to stop.
+
+```tsx
+const video = useRef<HTMLVideoElement>(null)
+const { open } = useLoupeEyeDropper({ source: video })
+
+<video ref={video} src="/clip.mp4" crossOrigin="anonymous" controls />
+<button onClick={() => open().then(({ sRGBHex }) => setColor(sRGBHex))}>Pick from video</button>
+```
+
+- Videos letterbox by default (`object-fit: contain`); the bars pick nothing.
+- `open()` rejects with `InvalidStateError` until the video has a frame (`readyState` below `HAVE_CURRENT_DATA`), e.g. with `preload="none"` before playing.
+- Cross-origin videos need CORS like images. DRM-protected video (Encrypted Media Extensions) can't be read.
+- `ImageColorPicker` (hover) is for images only.
 
 #### Motion
 
