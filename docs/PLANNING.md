@@ -1,8 +1,9 @@
 # react-eyedropper-picker 기획서
 
 - 작성일: 2026-11-04
-- 수정일: 2026-11-05 (열린 질문 결정 반영, 감성 효과·자유 배율 추가)
-- 현재 버전: v0.1.0 (스캐폴딩 완료, 미배포)
+- 수정일: 2026-11-08 (v0.4.0 기준으로 로드맵·결정 갱신, capture 보류 반영)
+- 현재 버전: v0.4.0 (npm 공개, 2026-11-08)
+- 데모: https://momoci99.github.io/react-eyedropper-picker/
 - 저장소: https://github.com/momoci99/react-eyedropper-picker
 
 ## 1. 개요
@@ -33,7 +34,7 @@
 
 기본값(배율 8x, 지름 120px)은 S1~S3 공통으로 사진 한 영역을 집는 상황 기준이다. S2처럼 크게 당겨 봐야 하는 경우는 자유 배율(6장)로 해결한다.
 
-**v0.1.0에 이미 있는 것**
+**v0.1.0에 있던 것** (출발점 기록. 이후 추가된 것은 9장 로드맵)
 
 | 구성 요소 | 내용 |
 | --- | --- |
@@ -113,7 +114,7 @@
 | 커서 커스텀 | react-eyedrop #83 | 스포이드 모드 커서 모양 지정 | v0.3 |
 | 순정과 같은 인터페이스 | eyedropper-polyfill | `open({ signal })` → `{ sRGBHex }` 형태 유지, 모드만 교체 | v0.2 |
 | 손가락 위 색 말풍선 | Adobe Spectrum color-loupe | 모바일에서 채도 패널 터치 시 손가락 위에 현재 색 표시 | v0.3 |
-| 캡처 방식 플러그인 | 폴리필 + getDisplayMedia 사례 | 사용자가 캡처 함수를 주입. 라이브러리는 캡처 구현을 내장하지 않음 | v0.4 |
+| 캡처 방식 플러그인 | 폴리필 + getDisplayMedia 사례 | 사용자가 캡처 함수를 주입. 라이브러리는 캡처 구현을 내장하지 않음 | 보류 (2026-11-07) |
 
 ## 5. 스포이드 모드 설계
 
@@ -121,7 +122,7 @@
 | --- | --- | --- | --- | --- |
 | **Native** | 화면 전체 (브라우저 밖 포함) | 불가 | Chromium만 | 유지 |
 | **Loupe** | 페이지 안 `<img>`, `<canvas>`, `<video>` | 가능 | 전 브라우저 + 모바일 | **핵심 신규 기능** |
-| **Screen capture** | 사용자가 고른 탭/창/화면의 정지 프레임 | 가능 (Loupe 재사용) | 데스크톱 대부분 | 실험 기능 |
+| **Screen capture** | 사용자가 고른 탭/창/화면의 정지 프레임 | 가능 (Loupe 재사용) | 데스크톱 대부분 | 보류 (2026-11-07) |
 
 ### 모드 선택 흐름 (`mode: 'auto'`)
 
@@ -139,6 +140,8 @@ flowchart TD
 **폴백 UX (결정: 숨김)**: source 없음 + 순정 미지원(Firefox, Safari, 모바일) + capture 없음이면 `NotSupportedError`다. 즉 "전 브라우저 지원"은 source가 있을 때만 성립한다. 이때 `ColorPicker`의 스포이드 버튼은 **숨긴다**. v0.1의 현재 동작과 같다. 못 쓰는 버튼을 보여 주지 않는다.
 
 ### Screen capture 모드
+
+> **보류 (2026-11-07)**: 화면 공유 권한 팝업을 라이브러리가 떠안는 것이 부담스럽다고 판단했다. v0.4에서 빼고, 요청이 생기면 다시 본다. 아래는 검토했던 설계다. 현재 `mode: 'auto'` 흐름에서 capture 분기는 없다.
 
 `getDisplayMedia`로 한 프레임을 캡처하고, 정지된 화면 위에서 Loupe를 실행한다.
 
@@ -360,7 +363,7 @@ react-eyedropper-picker/loupe    # Loupe 엔진, useLoupeEyeDropper, ImageColorP
 | 성능 | 큰 이미지에서 매 프레임 읽기/그리기 비용 | 픽셀 데이터 1회 캐시, rAF 안에서만 그리기, 확대 영역만 그리기 |
 | 고해상도 화면 | 레티나에서 CSS 좌표와 원본 픽셀 좌표 불일치 | 표시 크기 대비 원본 크기 비율로 좌표 변환, 테스트 케이스 작성 |
 | 색공간 | display-p3 이미지가 sRGB canvas로 변환되며 값이 달라질 수 있음 | 1차는 sRGB 고정 후 문서화. `colorSpace` 옵션은 추후 검토 |
-| `<video>` | 프레임이 계속 바뀜 | 스포이드를 열 때 현재 프레임을 고정해서 사용 (v0.4) |
+| `<video>` | 프레임이 계속 바뀜 | 스포이드를 열 때 현재 프레임을 오버레이 스냅샷으로 고정. 재생은 멈추지 않음 (v0.4 완료) |
 | 접근성 | 마우스 전용이 되기 쉬움 | 키보드 조작, 포커스 이동, `aria-live`로 현재 색 읽기, 모션 감소 대응 |
 | 터치 | 손가락이 대상을 가림 | 확대경 오프셋, 확정 방식(손 뗄 때) 명시 |
 | 사운드 거부감 | 앱에서 갑자기 소리가 나면 사용자가 불쾌해함 | 기본 꺼짐, 음량 옵션, 이벤트별 끄기, 탭 숨김 시 정지 |
@@ -372,24 +375,24 @@ react-eyedropper-picker/loupe    # Loupe 엔진, useLoupeEyeDropper, ImageColorP
 
 ```mermaid
 flowchart LR
-    V01["v0.1 (완료)<br/>스캐폴딩<br/>ColorPicker + 순정 훅"] --> V02["v0.2 (첫 npm 공개)<br/>Loupe MVP, 자유 배율<br/>img, canvas"]
-    V02 --> V03["v0.3<br/>효과, 사운드, 햅틱<br/>테마, 색 히스토리"]
-    V03 --> V04["v0.4<br/>video, capture 플러그인<br/>Screen capture 실험"]
-    V04 --> V10["v1.0<br/>문서 사이트, 데모<br/>API 고정"]
+    V01["v0.1 (완료)<br/>스캐폴딩<br/>ColorPicker + 순정 훅"] --> V02["v0.2 (완료, 첫 npm 공개)<br/>Loupe MVP, 자유 배율<br/>img, canvas, 데모"]
+    V02 --> V03["v0.3 (완료)<br/>효과, 사운드, 햅틱<br/>테마, 색 히스토리, 커서"]
+    V03 --> V04["v0.4 (완료)<br/>video, object-fit<br/>알파, 번들 크기 예산"]
+    V04 --> V10["v1.0<br/>API 고정, 문서 사이트<br/>브라우저 확인"]
 ```
 
 | 버전 | 범위 | 완료 조건 |
 | --- | --- | --- |
-| v0.1 | 프로젝트 구조, ColorPicker, 순정 훅, 테스트 | 완료 (미배포) |
-| v0.2 | Loupe 엔진, `useLoupeEyeDropper`, `ImageColorPicker`, 확대/그리드/샘플링/좌표, **자유 배율**(휠·핀치·키보드, min/max/steps), 키보드, 터치, Loupe 이벤트, `/loupe` 경로, `ColorPicker`의 `eyeDropper` prop, GitHub Pages 데모, `package.json` description 갱신, **첫 npm 공개** | jsdom 단위 테스트 + 실제 브라우저(Chrome, Firefox, Safari, 모바일 Safari) 수동 확인 + 데모 공개 + npm 배포 |
-| v0.3 | 부드러운 추적, 등장/확정 애니메이션, 배율 전환 애니메이션, **사운드(드르륵 틱, 확정 딸깍), 햅틱**, CSS 변수 테마, 다크 모드, 색 히스토리(근거 보강 필요), 손가락 위 색 말풍선 | 모션 감소 대응 확인, 데모에서 효과와 소리 시연(데모는 소리 켠 상태), Android 진동 확인 |
-| v0.4 | `<video>` 대상, `capture` 플러그인 구조, `getDisplayMedia` 예제 | 플러그인으로 html2canvas와 getDisplayMedia 둘 다 연결되는 예제 |
-| v1.0 | 문서 사이트, GitHub Pages 데모, API 고정, 번들 크기 예산 | semver 1.0 공개 |
+| v0.1 | 프로젝트 구조, ColorPicker, 순정 훅, 테스트 | 완료 (npm 미배포) |
+| v0.2 | Loupe 엔진, `useLoupeEyeDropper`, `ImageColorPicker`, 확대/그리드/샘플링/좌표, **자유 배율**(휠·핀치·키보드, min/max/steps), 키보드, 터치, Loupe 이벤트, `/loupe` 경로, `ColorPicker`의 `eyeDropper` prop, GitHub Pages 데모, `package.json` description 갱신, **첫 npm 공개** | 완료 (2026-11-06 npm 0.2.0). 브라우저 확인은 Chromium(Playwright e2e)만, 나머지는 v1.0으로 이월 |
+| v0.3 | 부드러운 추적, 등장/확정 애니메이션, 배율 전환 애니메이션, **사운드(드르륵 틱, 확정 딸깍), 햅틱**, CSS 변수 테마, 다크 모드, 색 히스토리(근거 보강 필요), 손가락 위 색 말풍선 | 완료 (2026-11-07 npm 0.3.0). 커스텀 커서(`cursor` 옵션, `eyeDropperCursor`) 추가. Android 진동 확인됨 |
+| v0.4 | `<video>` 대상(프레임 고정), `object-fit`/`object-position` 대응, 알파 채널(`alpha`, `AlphaSlider`), 번들 크기 예산 CI, README 한국어 병기 | 완료 (2026-11-08 npm 0.4.0). `capture` 플러그인과 video hover 모드는 보류 |
+| v1.0 | API 고정(공개 API 전수 검토), 문서 사이트, Firefox/Safari/iOS Safari 확인과 Safari 반응성 점검 | semver 1.0 공개 |
 
 CI(GitHub Actions: 테스트, 타입체크, 빌드)는 v0.2 작업 시작 전에 추가한다.
 
 - v0.1은 npm에 내지 않는다. v0.2(Loupe + 데모)를 첫 공개로 한다. 2026-11-05 기준 npm에 `react-eyedropper-picker` 이름이 비어 있어 선점이 급하지 않다.
-- 데모는 v1.0이 아니라 v0.2 공개와 함께 낸다. 확대경은 직접 봐야 가치가 전달된다. v1.0은 문서 사이트를 정식화한다.
+- 데모는 v1.0이 아니라 v0.2 공개와 함께 냈다. 확대경은 직접 봐야 가치가 전달된다. v1.0은 문서 사이트를 정식화한다.
 - 버전별 목표 시점: TBD. 투입 가능 시간을 기준으로 정한다.
 
 ### 성공 지표 (수치 TBD)
@@ -397,8 +400,8 @@ CI(GitHub Actions: 테스트, 타입체크, 빌드)는 v0.2 작업 시작 전에
 | 지표 | 목표 | 측정 시점 |
 | --- | --- | --- |
 | 픽셀 정확도 | 테스트 이미지 세트 기준 오차 0 | v0.2 |
-| `/loupe` 번들 크기 | gzip N KB 이하 | v0.2부터 CI |
-| 기본 경로 번들 크기 | gzip N KB 이하, v0.1 대비 증가 없음 | v0.2부터 CI |
+| `/loupe` 번들 크기 | min+gzip 12.00 kB 이하 (`pnpm size`) | v0.4부터 CI |
+| 기본 경로 번들 크기 | min+gzip 5.50 kB 이하 (`pnpm size`, 알파로 5.00에서 상향) | v0.4부터 CI |
 | 지원 브라우저 | Chrome, Firefox, Safari, iOS Safari, Android Chrome 수동 확인 통과 | 매 릴리스 |
 | 채택 | 주간 다운로드 N, ★ N | v1.0 |
 
@@ -425,9 +428,14 @@ CI(GitHub Actions: 테스트, 타입체크, 빌드)는 v0.2 작업 시작 전에
 - [x] 추가 필수 기능: **확대경 감성 효과**(드르륵 틱 소리, 확정 딸깍, 햅틱, v0.3)와 **자유 배율**(v0.2) (6장).
 - [x] 사운드 기본값: 라이브러리 **꺼짐**, 데모 **켜짐**.
 
+### 결정됨 (2026-11-07)
+
+- [x] `capture` 플러그인, `getDisplayMedia`: **보류**. 권한 팝업 부담. 요청이 생기면 재검토 (5장).
+- [x] `<video>`: 클릭해서 여는 `useLoupeEyeDropper`만 지원, 열 때 프레임 고정. video hover 모드는 **안 함** (요청이 생기면 재검토).
+- [x] 알파 채널: v0.4에서 **opt-in**(`alpha`, 기본 꺼짐)으로 넣음. 켜면 출력은 항상 `#rrggbbaa`, 스포이드로 뽑으면 alpha 1. Loupe 결과는 `#rrggbb` 유지.
+
 ### 후순위
 
-- [ ] 알파 채널(투명도) 지원을 v0.3에 넣을 것인가?
 - [ ] React 외 프레임워크 지원을 위해 Loupe 엔진을 프레임워크 독립 코어로 분리할 것인가?
 
 ## 12. 참고 자료
