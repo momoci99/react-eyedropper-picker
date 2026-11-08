@@ -1,6 +1,6 @@
 {
   "name": "react-eyedropper-picker",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "React color picker with native EyeDropper support and a pixel-accurate loupe for picking colors from images in every browser",
   "homepage": "https://momoci99.github.io/react-eyedropper-picker/",
   "repository": {
