@@ -1,0 +1,34 @@
+import BasicPicker from '../../examples/BasicPicker'
+import basicPickerCode from '../../examples/BasicPicker.tsx?code'
+import ImagePicker from '../../examples/ImagePicker'
+import imagePickerCode from '../../examples/ImagePicker.tsx?code'
+
+# Getting started
+
+## Install
+
+```bash
+npm install react-eyedropper-picker
+```
+
+It needs React 19.2 or newer. There are no other dependencies.
+
+## Add a color picker
+
+`ColorPicker` works like an input: pass `value` and `onChange`, or only `defaultValue`. Colors are hex strings, `#rrggbb`.
+
+<Example code={basicPickerCode}>
+  <BasicPicker />
+</Example>
+
+In Chrome, Edge and Opera an eye dropper button appears next to the input: it picks a color from anywhere on screen. Other browsers have no EyeDropper API, so the button is hidden.
+
+## Pick colors from an image
+
+`ImageColorPicker` from `react-eyedropper-picker/loupe` is an `<img>` with a loupe. It works in every browser, on touch screens too: press and drag, lift to pick.
+
+<Example code={imagePickerCode}>
+  <ImagePicker />
+</Example>
+
+Images from another origin need CORS (`crossOrigin="anonymous"` and the right server headers), or the browser won't let the loupe read pixels.

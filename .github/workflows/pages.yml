@@ -1,6 +1,6 @@
 name: Pages
 
-# Builds the demo and publishes it to GitHub Pages:
+# Builds the docs site and playground (prerendered) and publishes them to GitHub Pages:
 # https://momoci99.github.io/react-eyedropper-picker/
 on:
   push:
@@ -31,7 +31,7 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Build library and demo
+      - name: Build library and site
         run: pnpm build:demo
         env:
           # Pages serves the site under /<repo>/

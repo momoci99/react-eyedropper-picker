@@ -1,0 +1,25 @@
+import ImagePicker from '../../examples/ImagePicker'
+import imagePickerCode from '../../examples/ImagePicker.tsx?code'
+
+# react-eyedropper-picker
+
+A React color picker that is fun to pick with. It uses the browser's own eye dropper where there is one, and a pixel-accurate loupe for images in every browser, mobile included.
+
+<Example code={imagePickerCode}>
+  <ImagePicker />
+</Example>
+
+Move over the image: the loupe shows each pixel, the wheel zooms, a click picks. Sound is on in this example: after your first click it ticks as you cross pixels.
+
+## What you get
+
+- **`ColorPicker`**: saturation panel, hue and opacity sliders, hex input, recent colors, light and dark themes. Keyboard and touch friendly.
+- **Native eye dropper**: the [EyeDropper API](https://developer.mozilla.org/en-US/docs/Web/API/EyeDropper_API) picks from anywhere on screen in Chromium browsers.
+- **Loupe** (`react-eyedropper-picker/loupe`): pick from an `<img>`, `<canvas>` or `<video>` in every browser, with free zoom, grid, sampling and touch support.
+- **Feel**: optional tick and click sounds, haptics, smooth tracking and animations that respect reduced motion.
+- **Small and safe**: no runtime dependencies, typed, SSR-safe. The loupe lives in its own entry, so the picker alone stays small.
+
+## Next
+
+- [Getting started](/getting-started/): install it and pick your first color.
+- [Playground](/playground/): every option to try.

@@ -12,7 +12,11 @@ packages/react-eyedropper-picker   # the published npm library (tsdown → ESM +
   src/index.ts                     # public API — every export here is public surface
   src/loupe/                       # `/loupe` entry: ImageColorPicker, useLoupeEyeDropper
   tests/                           # vitest + jsdom + Testing Library
-apps/demo                          # private Vite playground; aliases library *source* for HMR
+apps/demo                          # private docs site + playground (Vite); aliases library *source* for HMR
+  src/docs/{en,ko}/*.mdx           # doc pages, one file per language (same slug)
+  src/site/                        # router, layout, routes.ts (sidebar order = NAV), language suggestion
+  src/examples/                    # live examples; MDX imports `X.tsx` (runs) and `X.tsx?code` (shown source)
+  scripts/prerender.mjs            # build: SSR bundle → one HTML per route + 404.html
   e2e/desktop, e2e/mobile          # Playwright checks in real Chromium (mouse / touch)
 ```
 
@@ -44,6 +48,7 @@ Run `pnpm format && pnpm typecheck && pnpm test` before considering a change don
 - `sideEffects: false`: no top-level side effects in `src/`.
 - EyeDropper API is not available everywhere (Chromium only, not in jsdom). Guard with `isEyeDropperSupported`; mock it in tests.
 - Changes to `src/index.ts` exports are public API changes; call them out.
+- Docs site (`apps/demo`): every page exists in `en` and `ko` with the same slug; add it to `NAV` in `src/site/routes.ts`. Write examples as `.tsx` files in `src/examples/` and import them twice (component + `?code`), never paste example code into MDX. Pages are prerendered and hydrated: no `window`/`document`/storage during render; wrap browser-only examples in `<Example client>`. The `docs` e2e project tests the built site (hydration errors fail it).
 - READMEs (root and package) are bilingual: each English paragraph or list is followed by its Korean version, headings read `English · 한국어`, table descriptions add Korean after `<br>`. Code blocks stay single. When you change a README, update both languages. Never touch the personal P.S. at the end of the root README.
 
 ## React best practices
