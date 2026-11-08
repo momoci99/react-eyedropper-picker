@@ -16,6 +16,8 @@ for (const [path, h1] of PAGES) {
     const html = await (await page.request.get(path)).text()
     expect(html).toContain(`data-path="${path}"`)
     expect(html).toContain(`<h1`)
+    // Inline, not a hidden segment swapped in by a script later.
+    expect(html).not.toContain('<!--$?-->')
 
     await page.goto(path)
     await expect(page.locator('.doc h1')).toHaveText(h1)

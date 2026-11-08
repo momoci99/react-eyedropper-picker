@@ -17,7 +17,11 @@ export const render = async (path: string) => {
       <StaticRouter path={path}>
         <App />
       </StaticRouter>
-    </StrictMode>
+    </StrictMode>,
+    // Keep every page inline. By default React moves large Suspense content
+    // into a hidden <div> plus a script that swaps it in later: invisible
+    // until then, and doubled if the reader navigates before it runs.
+    { progressiveChunkSize: Number.POSITIVE_INFINITY }
   )
   const html = await new Response(prelude).text()
   const lang = route.kind === 'playground' ? 'en' : route.lang
