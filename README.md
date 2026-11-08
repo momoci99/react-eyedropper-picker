@@ -1,5 +1,11 @@
 # react-eyedropper-picker (monorepo)
 
+![Picking colors from an image with the loupe: hover, zoom with the wheel, click to pick](apps/demo/public/loupe-demo.gif)
+
+React color picker with the native EyeDropper API and a pixel-accurate loupe for images in every browser. **[Docs and live demo →](https://momoci99.github.io/react-eyedropper-picker/)**
+
+순정 EyeDropper API와, 모든 브라우저에서 이미지 색을 픽셀 단위로 뽑는 확대경을 갖춘 React 컬러 피커입니다. **[문서와 데모 보기 →](https://momoci99.github.io/react-eyedropper-picker/ko/)**
+
 See [packages/react-eyedropper-picker/README.md](packages/react-eyedropper-picker/README.md) for library docs.
 
 라이브러리 문서는 [packages/react-eyedropper-picker/README.md](packages/react-eyedropper-picker/README.md)를 보세요.
