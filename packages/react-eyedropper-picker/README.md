@@ -6,7 +6,7 @@ Zero runtime dependencies, fully typed, SSR-safe, keyboard accessible.
 브라우저 기본 [EyeDropper API](https://developer.mozilla.org/en-US/docs/Web/API/EyeDropper_API)를 지원하는 React 컬러 피커입니다.
 런타임 의존성이 없고, 타입이 모두 갖춰져 있으며, SSR에서 안전하고, 키보드로 조작할 수 있습니다.
 
-**[Live demo →](https://momoci99.github.io/react-eyedropper-picker/)** · **[데모 보기 →](https://momoci99.github.io/react-eyedropper-picker/)**
+**[Docs and live demo →](https://momoci99.github.io/react-eyedropper-picker/)** · **[문서와 데모 보기 →](https://momoci99.github.io/react-eyedropper-picker/ko/)**
 
 ```bash
 npm install react-eyedropper-picker

@@ -10,7 +10,7 @@ import {
 
 // Default mode: hover · ImageColorPicker, pixel art sample.
 test.beforeEach(async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/playground/')
   await expect(loupeDemo(page).image).toBeVisible()
 })
 

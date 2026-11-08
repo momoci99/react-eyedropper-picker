@@ -1,6 +1,8 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    // vite.config.ts imports ./plugins/*.ts with the extension (Vite's native config loader needs it).
+    "allowImportingTsExtensions": true,
     "paths": {
       "react-eyedropper-picker": [
         "../../packages/react-eyedropper-picker/src/index.ts"
@@ -10,5 +12,5 @@
       ]
     }
   },
-  "include": ["src", "e2e", "vite.config.ts", "playwright.config.ts"]
+  "include": ["src", "e2e", "plugins", "scripts", "vite.config.ts", "playwright.config.ts"]
 }

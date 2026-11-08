@@ -39,7 +39,7 @@ const path = async (
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/playground/')
   await expect(loupeDemo(page).image).toBeVisible()
   // Room above the image for the loupe over the finger.
   await page.evaluate(() => window.scrollTo(0, 120))
