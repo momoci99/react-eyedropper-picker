@@ -1,0 +1,71 @@
+import CustomPicker from '../../examples/CustomPicker'
+import customPickerCode from '../../examples/CustomPicker.tsx?code'
+
+# Building your own
+
+`ColorPicker` is made of parts you can use on their own: a state hook and four components. Arrange them however you like.
+
+<Example code={customPickerCode}>
+  <CustomPicker />
+</Example>
+
+## useColorPicker
+
+The picker's state without any UI. It keeps the color as HSV inside, so the hue survives when the color hits black, white or gray.
+
+```tsx
+const picker = useColorPicker({ defaultValue: '#22c55e' })
+```
+
+Options: `value`, `defaultValue`, `onChange`, `alpha` and `eyeDropper`, the same as on [ColorPicker](/color-picker/#props).
+
+| Result | Type | Description |
+| --- | --- | --- |
+| `hex` | `string` | `#rrggbb`, or `#rrggbbaa` with `alpha`. |
+| `hsv` | `{ h, s, v }` | Hue 0–360, saturation and value 0–100. |
+| `alpha` | `number` | 0 (transparent) to 1 (opaque). Always 1 without `alpha`. |
+| `setHex` | `(hex) => boolean` | Sets a color from hex. False if it isn't valid. |
+| `setHsv` | `(hsv) => void` | Sets a color from HSV. |
+| `setAlpha` | `(alpha) => void` | Sets the opacity, 0–1. Ignored without `alpha`. |
+| `pickColor` | `() => Promise<string \| null>` | Opens the eye dropper and applies the color. Returns the new hex, or null if cancelled. |
+| `canPickColor` | `boolean` | The eye dropper works here: show a pick button only when true. |
+
+`pickFromScreen` and `isEyeDropperSupported` are older names for `pickColor` and `canPickColor`. They still work in 0.x and are removed in 1.0.
+
+## Parts
+
+| Component | Props | Notes |
+| --- | --- | --- |
+| `SaturationPanel` | `hsv`, `onChange(hsv)` | Saturation left to right, brightness bottom to top. |
+| `HueSlider` | `hue`, `onChange(hue)` | 0–360. |
+| `AlphaSlider` | `color`, `alpha`, `onChange(alpha)` | Shows `color` from transparent to opaque over a checkerboard. |
+| `EyeDropperButton` | any `<button>` prop | A button with the eye dropper icon. `EyeDropperIcon` is the icon alone. |
+
+The sliders and the panel also take `touchBubble` (default true), `className` and `style`. They work with mouse, touch, pen and keyboard.
+
+## useEyeDropper
+
+Only the native [EyeDropper API](https://developer.mozilla.org/en-US/docs/Web/API/EyeDropper_API), as a hook.
+
+```tsx
+import { useEyeDropper } from 'react-eyedropper-picker'
+
+const { open, close, isSupported } = useEyeDropper()
+const { sRGBHex } = await open() // rejects with AbortError on cancel or close()
+```
+
+`open()` rejects with `NotSupportedError` where the browser has no EyeDropper API, so check `isSupported` first. `isSupported` is false during server rendering and the first render, then true in Chromium browsers. `isEyeDropperSupported()` is the same check as a plain function.
+
+## Color utilities
+
+All exported from `react-eyedropper-picker`:
+
+- `normalizeHex`, `isValidHex`, `hexToRgb`, `rgbToHex`, `rgbToHsv`, `hsvToRgb`, `hexToHsv`, `hsvToHex`.
+- With alpha: `normalizeHexAlpha` (any of `#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa` to `#rrggbbaa`), `hexToRgba`, `rgbaToHex`.
+- Types: `RGB`, `RGBA` (`a` is 0–1), `HSV`.
+
+```ts
+normalizeHex('#ABC') // '#aabbcc'
+hexToRgb('#ff8000') // { r: 255, g: 128, b: 0 }
+normalizeHexAlpha('#f008') // '#ff000088'
+```

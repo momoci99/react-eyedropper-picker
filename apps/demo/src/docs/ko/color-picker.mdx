@@ -1,0 +1,89 @@
+import BasicPicker from '../../examples/BasicPicker'
+import basicPickerCode from '../../examples/BasicPicker.tsx?code'
+import AlphaPicker from '../../examples/AlphaPicker'
+import alphaPickerCode from '../../examples/AlphaPicker.tsx?code'
+import HistoryPicker from '../../examples/HistoryPicker'
+import historyPickerCode from '../../examples/HistoryPicker.tsx?code'
+
+# ColorPicker
+
+바로 쓰는 완성형 피커입니다. 채도 패널, 색상 슬라이더, hex 입력창, 스포이드 버튼이 들어 있습니다. input처럼 제어·비제어 방식 모두 쓸 수 있습니다.
+
+<Example code={basicPickerCode}>
+  <BasicPicker />
+</Example>
+
+## Props
+
+| Prop | 타입 | 기본값 | 설명 |
+| --- | --- | --- | --- |
+| `value` | `string` | – | 제어 모드의 hex 값. |
+| `defaultValue` | `string` | `'#000000'` | 비제어 모드의 초깃값. |
+| `onChange` | `(hex: string) => void` | – | 정규화된 `#rrggbb`로 호출 (`alpha`를 켜면 `#rrggbbaa`). |
+| `alpha` | `boolean` | `false` | 투명도 슬라이더. 값이 `#rrggbbaa`가 됩니다. |
+| `showEyeDropper` | `boolean` | `true` | 스포이드가 동작하는 곳에서 버튼 표시. |
+| `eyeDropper` | `EyeDropperLike` | 순정 | 버튼이 여는 스포이드. 확대경을 넘기면 모든 브라우저에서 이미지 색을 뽑습니다([확대경](/ko/loupe/#colorpicker와-함께)). |
+| `showInput` | `boolean` | `true` | hex 입력창 표시. |
+| `theme` | `'light' \| 'dark' \| 'auto'` | `'light'` | `'auto'`는 OS 설정을 따릅니다. |
+| `history` | `boolean \| UseColorHistoryOptions \| UseColorHistoryResult` | `false` | 입력창 아래 최근 색. |
+| `touchBubble` | `boolean` | `true` | 터치로 끌 때 손가락 위 색 말풍선. |
+| `className` | `string` | – | 루트 요소 클래스 이름. |
+| `style` | `CSSProperties` | – | 루트 인라인 스타일. 기본값과 합쳐집니다. |
+
+입력창은 `#rgb`, `#rrggbb`를 받습니다(`alpha`를 켜면 투명도 형식도). 입력하는 도중에는 색이 그대로 있고, 입력창을 벗어나면 현재 색을 다시 보여 줍니다.
+
+## 투명도
+
+`alpha`를 켜면 색상 슬라이더 아래에 투명도 슬라이더가 생깁니다.
+
+<Example code={alphaPickerCode}>
+  <AlphaPicker />
+</Example>
+
+- 값은 항상 `#rrggbbaa`입니다. `ff`는 불투명, `00`은 투명입니다. `#336699`는 `#336699ff`로 돌아옵니다.
+- `value`, `defaultValue`, 입력창은 `#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa`를 받습니다. 투명도 자리가 없으면 불투명입니다.
+- 스포이드로 뽑은 색은 불투명입니다. 화면 픽셀에는 투명도가 없기 때문입니다.
+- 미리보기와 최근 색 견본은 체커보드 위에 투명도를 보여 줍니다.
+
+## 최근 색
+
+`history`를 켜면 스포이드로 뽑은 색이 입력창 아래 견본으로 쌓입니다. 누르면 그 색을 다시 씁니다. 드래그나 직접 입력한 색은 쌓이지 않습니다.
+
+<Example code={historyPickerCode}>
+  <HistoryPicker />
+</Example>
+
+```tsx
+<ColorPicker history />                                            // 메모리에만
+<ColorPicker history={{ storageKey: 'my-app-colors', max: 12 }} /> // localStorage에 보관
+```
+
+| 옵션 | 기본값 | 설명 |
+| --- | --- | --- |
+| `max` | `8` | 최대 보관 개수. |
+| `storageKey` | – | 이 키로 `localStorage`에 저장. 같은 키를 쓰는 탭과 피커끼리 동기화됩니다. |
+| `defaultColors` | `[]` | 저장된 것이 없을 때 쓰는 시작 색. |
+
+`useColorHistory`는 같은 기록을 훅으로 제공합니다. 견본을 직접 그리거나, 결과를 `history`에 넘겨 여러 피커가 기록 하나를 나눠 쓸 수 있습니다.
+
+```tsx
+const history = useColorHistory({ storageKey: 'my-app-colors' })
+// history.colors: 최신순. history.add(hex), history.remove(hex), history.clear()
+
+<ColorPicker history={history} />
+<ImageColorPicker src="/photo.jpg" onPick={(c) => history.add(c.sRGBHex)} />
+```
+
+`storageKey`를 쓰면 서버는 `defaultColors`로 렌더링하고, 브라우저는 하이드레이션 중에 저장소를 읽습니다. 저장소가 막혀 있거나 가득 차도 페이지가 열려 있는 동안은 기록이 동작합니다.
+
+## 터치
+
+터치 화면에서는 엄지가 손잡이를 가립니다. 패널이나 슬라이더를 터치로 끄는 동안 손가락 위 말풍선에 그 아래 색을 보여 줍니다. 마우스와 펜에서는 나오지 않습니다. `touchBubble={false}`로 끌 수 있습니다.
+
+## 키보드
+
+각 부품은 스크린 리더와 키보드에서 슬라이더(`role="slider"`)로 동작합니다.
+
+- 채도 패널: 왼쪽·오른쪽은 채도, 위·아래는 밝기를 1%씩(Shift: 10%씩) 바꿉니다.
+- 색상 슬라이더: 방향키로 1°씩(Shift: 10°씩), Home과 End로 0°와 360°로 갑니다.
+- 투명도 슬라이더: 방향키로 1%씩(Shift: 10%씩), Home과 End로 0%와 100%로 갑니다.

@@ -29,6 +29,35 @@ export const NAV: { title: Text; items: DocItem[] }[] = [
       },
     ],
   },
+  {
+    title: { en: 'Guides', ko: '가이드' },
+    items: [
+      {
+        slug: 'color-picker',
+        title: { en: 'ColorPicker', ko: 'ColorPicker' },
+        description: {
+          en: 'The ready-made picker: props, opacity, recent colors, touch and keyboard.',
+          ko: '완성형 피커: props, 투명도, 최근 색, 터치와 키보드.',
+        },
+      },
+      {
+        slug: 'parts',
+        title: { en: 'Building your own', ko: '직접 조합하기' },
+        description: {
+          en: 'useColorPicker, the panel and slider parts, useEyeDropper and color utilities.',
+          ko: 'useColorPicker, 패널·슬라이더 부품, useEyeDropper, 색 변환 함수.',
+        },
+      },
+      {
+        slug: 'loupe',
+        title: { en: 'Loupe', ko: '확대경' },
+        description: {
+          en: 'Pick pixel-accurate colors from images, canvas and video in every browser.',
+          ko: '모든 브라우저에서 이미지, 캔버스, 영상의 색을 픽셀 단위로 정확하게 뽑습니다.',
+        },
+      },
+    ],
+  },
 ]
 
 export const DOCS: DocItem[] = NAV.flatMap((s) => s.items)

@@ -1,0 +1,108 @@
+import LoupeOptions from '../../examples/LoupeOptions'
+import loupeOptionsCode from '../../examples/LoupeOptions.tsx?code'
+import LoupeButton from '../../examples/LoupeButton'
+import loupeButtonCode from '../../examples/LoupeButton.tsx?code'
+import PickerWithLoupe from '../../examples/PickerWithLoupe'
+import pickerWithLoupeCode from '../../examples/PickerWithLoupe.tsx?code'
+
+# Loupe
+
+`react-eyedropper-picker/loupe` is a pixel-accurate magnifier for picking colors from an `<img>`, `<canvas>` or `<video>`. It works in every browser, on touch screens too. It reads the source's own pixels, so what you pick is exactly what the image holds, at any zoom.
+
+It is a separate entry: apps that only use the base entry don't bundle it. It needs `react-dom` (for `renderLabel`); the base entry does not.
+
+There are two ways to use it:
+
+- **`ImageColorPicker`**: an image you can always pick from. Hover to aim, click to pick, again and again.
+- **`useLoupeEyeDropper`**: pick once when something asks for it, like the native eye dropper. `open()` returns a promise.
+
+## ImageColorPicker
+
+<Example code={loupeOptionsCode}>
+  <LoupeOptions />
+</Example>
+
+| Input | Aim | Pick | Zoom |
+| --- | --- | --- | --- |
+| Mouse | Hover | Click | Wheel, only over the image |
+| Touch | Press and drag | Lift | Pinch with two fingers on the image |
+| Keyboard | Tab to the image, Enter or Space opens the full-screen loupe (keys [below](#controls)) | | |
+
+- It takes every `<img>` prop, plus `onPick`, `onPickError` and `loupe` (the [options](#options) and `renderLabel(color)`, which replaces the hex label).
+- `onPick` gets `{ sRGBHex, x, y, mode }`. `x` and `y` are the source pixel.
+- `onPickError` gets read errors, such as `SecurityError` for a cross-origin image without CORS. Default: `console.error`.
+- Touches on the image don't scroll the page; elsewhere the page scrolls as usual.
+
+## useLoupeEyeDropper
+
+<Example code={loupeButtonCode}>
+  <LoupeButton />
+</Example>
+
+`open()` covers the page with the loupe on top of the source and resolves with `{ sRGBHex, x, y, mode }` once you pick. Cancelling rejects with `AbortError`.
+
+### Controls
+
+| Input | Aim | Pick | Cancel | Zoom |
+| --- | --- | --- | --- | --- |
+| Mouse | Move | Click | Click outside the image | Wheel |
+| Touch | Drag (the loupe sits above your finger) | Lift | Tap outside | Pinch |
+| Keyboard | Arrows: 1 px, Shift: 10 px | Enter | Escape | `+` / `-`, `0` resets |
+
+- `mode`: `'auto'` (default) uses the loupe when there is a `source`, otherwise the native eye dropper. `'native'` and `'loupe'` force one.
+- `source` is an element or a ref. `open({ source })` can pick from another one, and `open({ signal })` takes an `AbortSignal`.
+- Focus goes back to where it was before `open()`. Don't disable the button while `isOpen`: a disabled button can't take focus back.
+
+## With ColorPicker
+
+Pass the hook to `eyeDropper`. The picker's eye dropper button then opens the loupe on your image, so it shows in every browser, not only where the native eye dropper exists. Picks land in `history` too.
+
+<Example code={pickerWithLoupeCode}>
+  <PickerWithLoupe />
+</Example>
+
+`ColorPicker` only needs `{ open, isSupported }`, so the base entry still doesn't bundle the loupe. `useColorPicker({ eyeDropper })` does the same for your own pickers.
+
+## Options
+
+`loupe` on `ImageColorPicker` and `useLoupeEyeDropper`:
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `defaultMagnification` | `8` | Starting zoom. |
+| `minMagnification` / `maxMagnification` | `1` / `64` | Zoom range. |
+| `magnificationSteps` | – | Zoom only to these values, e.g. `[2, 4, 8, 16]`. |
+| `magnification` + `onMagnificationChange` | – | Controlled zoom. |
+| `size` | `120` | Loupe size in CSS pixels. |
+| `shape` | `'circle'` | `'circle'` or `'square'`. |
+| `grid` | `true` | Lines between pixels when they are big enough. |
+| `sampleSize` | `1` | `1`, `3` or `5`: pick the average of an N×N area, for noisy photos. |
+| `className` | – | Class on the loupe element. |
+| `smoothing` | `0` | 0 to 1: the loupe glides after the pointer. The picked pixel is always under the pointer. |
+| `animate` | `true` | Grow in, shrink out, smooth zoom. Off with reduced motion. |
+| `cursor` | `'none'` | CSS cursor over the image. With a cursor, the loupe moves above the pointer. `eyeDropperCursor` is a ready-made one. |
+| `sound` | `false` | Ticks, clicks and whooshes made with Web Audio. `true` or options (`volume`, `events`, `minTickInterval`, `play`). |
+| `haptics` | `false` | Vibrate on ticks and pick (Android Chrome). |
+
+Zoom is free by default: each wheel notch or key press zooms by ×1.1, and the loupe keeps the center pixel exactly in the middle at any value. Try every option in the [playground](/playground/).
+
+## Video
+
+`source` can be a `<video>`. `open()` picks from the frame showing at that moment: the frame covers the video until you pick or cancel, so what you aim at stays still. Playback continues; pause it yourself if you want.
+
+```tsx
+const video = useRef<HTMLVideoElement>(null)
+const { open } = useLoupeEyeDropper({ source: video })
+
+<video ref={video} src="/clip.mp4" crossOrigin="anonymous" controls />
+<button onClick={() => open().then(({ sRGBHex }) => setColor(sRGBHex))}>Pick from video</button>
+```
+
+- `open()` rejects with `InvalidStateError` until the video has a frame, e.g. with `preload="none"` before it plays.
+- DRM-protected video can't be read.
+- `ImageColorPicker` is for images only.
+
+## Cross-origin images and layout
+
+- Images and videos from another origin need CORS: `crossOrigin="anonymous"` on the element and the right headers from the server. Otherwise the browser blocks reading pixels and you get a `SecurityError`.
+- CSS `object-fit`, `object-position`, border and padding are followed. The loupe picks where the picture is drawn; letterbox bars pick nothing.
