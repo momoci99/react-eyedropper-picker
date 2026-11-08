@@ -1,8 +1,8 @@
 # react-eyedropper-picker 기획서
 
 - 작성일: 2026-11-04
-- 수정일: 2026-11-08 (v0.4.0 기준으로 로드맵·결정 갱신, capture 보류 반영)
-- 현재 버전: v0.4.0 (npm 공개, 2026-11-08)
+- 수정일: 2026-11-08 (v0.5 단계 추가, 엔진 분리 1.0 이후로 결정)
+- 현재 버전: v0.4.0 (npm 공개, 2026-11-08). v0.5.0 배포 준비 중 (#39)
 - 데모: https://momoci99.github.io/react-eyedropper-picker/
 - 저장소: https://github.com/momoci99/react-eyedropper-picker
 
@@ -378,7 +378,8 @@ flowchart LR
     V01["v0.1 (완료)<br/>스캐폴딩<br/>ColorPicker + 순정 훅"] --> V02["v0.2 (완료, 첫 npm 공개)<br/>Loupe MVP, 자유 배율<br/>img, canvas, 데모"]
     V02 --> V03["v0.3 (완료)<br/>효과, 사운드, 햅틱<br/>테마, 색 히스토리, 커서"]
     V03 --> V04["v0.4 (완료)<br/>video, object-fit<br/>알파, 번들 크기 예산"]
-    V04 --> V10["v1.0<br/>API 고정, 문서 사이트<br/>브라우저 확인"]
+    V04 --> V05["v0.5<br/>API 이름 정리, Safari 수정<br/>문서 사이트"]
+    V05 --> V10["v1.0<br/>deprecated 별칭 삭제<br/>API 고정"]
 ```
 
 | 버전 | 범위 | 완료 조건 |
@@ -387,7 +388,8 @@ flowchart LR
 | v0.2 | Loupe 엔진, `useLoupeEyeDropper`, `ImageColorPicker`, 확대/그리드/샘플링/좌표, **자유 배율**(휠·핀치·키보드, min/max/steps), 키보드, 터치, Loupe 이벤트, `/loupe` 경로, `ColorPicker`의 `eyeDropper` prop, GitHub Pages 데모, `package.json` description 갱신, **첫 npm 공개** | 완료 (2026-11-06 npm 0.2.0). 브라우저 확인은 Chromium(Playwright e2e)만, 나머지는 v1.0으로 이월 |
 | v0.3 | 부드러운 추적, 등장/확정 애니메이션, 배율 전환 애니메이션, **사운드(드르륵 틱, 확정 딸깍), 햅틱**, CSS 변수 테마, 다크 모드, 색 히스토리(근거 보강 필요), 손가락 위 색 말풍선 | 완료 (2026-11-07 npm 0.3.0). 커스텀 커서(`cursor` 옵션, `eyeDropperCursor`) 추가. Android 진동 확인됨 |
 | v0.4 | `<video>` 대상(프레임 고정), `object-fit`/`object-position` 대응, 알파 채널(`alpha`, `AlphaSlider`), 번들 크기 예산 CI, README 한국어 병기 | 완료 (2026-11-08 npm 0.4.0). `capture` 플러그인과 video hover 모드는 보류 |
-| v1.0 | API 고정(공개 API 전수 검토), 문서 사이트, Firefox/Safari/iOS Safari 확인과 Safari 반응성 점검 | semver 1.0 공개 |
+| v0.5 | API 이름 정리(`pickColor`, `canPickColor`, 예전 이름은 deprecated 별칭), Safari 버그 2개 수정, WebKit e2e, 문서 사이트(영어·한국어, 예제, 미리 렌더링, `/playground/`) | Firefox·Safari 직접 확인(기능 이상 없음, 체감 지연은 브라우저 그리기 단계로 판단). npm 0.5.0 배포 |
+| v1.0 | deprecated 별칭(`pickFromScreen`, 결과의 `isEyeDropperSupported`) 삭제, API 고정 | semver 1.0 공개 |
 
 CI(GitHub Actions: 테스트, 타입체크, 빌드)는 v0.2 작업 시작 전에 추가한다.
 
@@ -434,9 +436,11 @@ CI(GitHub Actions: 테스트, 타입체크, 빌드)는 v0.2 작업 시작 전에
 - [x] `<video>`: 클릭해서 여는 `useLoupeEyeDropper`만 지원, 열 때 프레임 고정. video hover 모드는 **안 함** (요청이 생기면 재검토).
 - [x] 알파 채널: v0.4에서 **opt-in**(`alpha`, 기본 꺼짐)으로 넣음. 켜면 출력은 항상 `#rrggbbaa`, 스포이드로 뽑으면 alpha 1. Loupe 결과는 `#rrggbb` 유지.
 
-### 후순위
+### 결정됨 (2026-11-08)
 
-- [ ] React 외 프레임워크 지원을 위해 Loupe 엔진을 프레임워크 독립 코어로 분리할 것인가?
+- [x] 릴리스 순서: **0.5.0 먼저**(새 이름 + deprecated 별칭), 그다음 1.0에서 별칭 삭제. 0.4 사용자가 경고를 보고 옮겨 갈 시간을 준다.
+- [x] 문서 사이트: Starlight 대신 **데모 앱 확장**(MDX, 미리 렌더링). 문서는 루트, 데모는 `/playground/`. 첫 방문 때 브라우저 언어로 언어를 추천(자동 이동 없음).
+- [x] Loupe 엔진의 프레임워크 독립 코어 분리: **1.0 이후로 보류**, 추가 요구가 있을 때 재검토. 엔진은 이미 내부적으로 React 없는 DOM 코드라, 나중에 `/core` 같은 진입점을 추가해도 기존 사용자 코드는 깨지지 않는다.
 
 ## 12. 참고 자료
 
