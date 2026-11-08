@@ -13,6 +13,7 @@
     "size": "pnpm -C packages/react-eyedropper-picker size",
     "e2e": "pnpm -C apps/demo e2e",
     "e2e:install": "pnpm -C apps/demo e2e:install",
+    "readme-gif": "pnpm -C apps/demo readme-gif",
     "format": "prettier --write \"{packages,apps}/*/{src,tests,e2e,scripts}/**/*.{ts,tsx,css,mjs}\"",
     "format:check": "prettier --check \"{packages,apps}/*/{src,tests,e2e,scripts}/**/*.{ts,tsx,css,mjs}\""
   },
