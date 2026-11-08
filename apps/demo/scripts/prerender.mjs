@@ -23,6 +23,11 @@ const escape = (s) =>
 
 const page = async (path) => {
   const { html, title, lang, description, alternates } = await render(path)
+  // Content must be inline: a pending Suspense boundary or an outlined
+  // segment stays hidden until a script runs.
+  if (html.includes('<!--$?-->') || html.includes('hidden id="S:')) {
+    throw new Error(`${path}: content is not inline (Suspense boundary)`)
+  }
   const head = [
     `<title>${escape(title)}</title>`,
     description &&
