@@ -28,7 +28,7 @@ export type UseColorPickerOptions = {
    */
   alpha?: boolean
   /**
-   * Eye dropper used by `pickFromScreen`. Default: the native EyeDropper
+   * Eye dropper used by `pickColor`. Default: the native EyeDropper
    * (`useEyeDropper()`). Pass `useLoupeEyeDropper()` from
    * `react-eyedropper-picker/loupe` to pick from an image in every browser.
    */
@@ -47,9 +47,15 @@ export type UseColorPickerResult = {
   setAlpha: (alpha: number) => void
   /**
    * Opens the eye dropper and applies the picked color (opaque). Returns the
-   * new hex, or null if cancelled.
+   * new hex, or null if cancelled. Picks from the screen (native) or from an
+   * image (a loupe `eyeDropper`).
    */
+  pickColor: () => Promise<string | null>
+  /** The eye dropper works here: show a pick button only when true. */
+  canPickColor: boolean
+  /** @deprecated Use `pickColor`. Removed in 1.0. */
   pickFromScreen: () => Promise<string | null>
+  /** @deprecated Use `canPickColor`. Removed in 1.0. */
   isEyeDropperSupported: boolean
 }
 
@@ -141,7 +147,7 @@ export const useColorPicker = ({
   const native = useEyeDropper()
   const { open, isSupported } = eyeDropper ?? native
 
-  const pickFromScreen = useCallback(async () => {
+  const pickColor = useCallback(async () => {
     try {
       const { sRGBHex } = await open()
       // Some browsers return `rgba(...)` instead of hex
@@ -164,7 +170,9 @@ export const useColorPicker = ({
     setHex,
     setHsv,
     setAlpha,
-    pickFromScreen,
+    pickColor,
+    canPickColor: isSupported,
+    pickFromScreen: pickColor,
     isEyeDropperSupported: isSupported,
   }
 }

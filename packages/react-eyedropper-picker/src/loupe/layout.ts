@@ -1,5 +1,5 @@
 import { fitRect, type DisplayRect } from './geometry'
-import type { LoupeSource } from './pixels'
+import type { PickSource } from './pixels'
 
 /** Where a source's pixels are on screen. */
 export type SourceLayout = {
@@ -16,7 +16,7 @@ export type SourceLayout = {
  * translation.
  */
 export const sourceLayout = (
-  source: LoupeSource,
+  source: PickSource,
   width: number,
   height: number
 ): SourceLayout => {
