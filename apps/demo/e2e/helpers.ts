@@ -59,7 +59,11 @@ export const pixelPoint = async (
 ): Promise<[number, number]> => {
   const box = (await image.boundingBox())!
   const cell = box.width / sourceWidth
-  return [box.x + (x + 0.5) * cell, box.y + (y + 0.5) * cell]
+  // Whole CSS pixels: WebKit rounds mouse positions, Chromium does not.
+  return [
+    Math.round(box.x + (x + 0.5) * cell),
+    Math.round(box.y + (y + 0.5) * cell),
+  ]
 }
 
 export const loupeDemo = (page: Page) => {

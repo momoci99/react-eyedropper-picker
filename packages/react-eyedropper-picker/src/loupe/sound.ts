@@ -341,9 +341,11 @@ export const createLoupeSound = (
       const ctx = getContext(win, hasUserActivation(win))
       if (!ctx) return
       if (ctx.state !== 'running' && !resuming) {
-        // Hidden tab or a gesture since: wake it, skip this one sound.
-        if (hasUserActivation(win)) resume(ctx)
-        return
+        // New (Safari starts it suspended) or back from a hidden tab: wake
+        // it and play; the sound starts once it runs. No gesture yet: stay
+        // silent.
+        if (!hasUserActivation(win)) return
+        resume(ctx)
       }
       const out = outputFor(ctx)
 

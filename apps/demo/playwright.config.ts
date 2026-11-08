@@ -22,6 +22,16 @@ export default defineConfig({
       use: { viewport: { width: 1280, height: 900 }, deviceScaleFactor: 2 },
     },
     {
+      // Safari's engine. Desktop only: the touch tests use CDP (Chromium).
+      name: 'desktop-webkit',
+      testMatch: /desktop\/.*\.spec\.ts/,
+      use: {
+        browserName: 'webkit',
+        viewport: { width: 1280, height: 900 },
+        deviceScaleFactor: 2,
+      },
+    },
+    {
       name: 'mobile',
       testMatch: /mobile\/.*\.spec\.ts/,
       use: {

@@ -62,7 +62,8 @@ jobs:
           '
           rm pack.json
 
-  # Playwright checks against the demo in real Chromium (desktop mouse + mobile touch).
+  # Playwright checks against the demo in real Chromium (desktop mouse + mobile touch)
+  # and WebKit (desktop mouse, Safari's engine).
   # Runs the demo dev server itself; it uses library source, so no build needed.
   e2e:
     runs-on: ubuntu-latest
@@ -78,8 +79,8 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # Headless shell is enough (tests run headless); --with-deps adds OS libraries.
-      - name: Install Chromium
+      # Headless shell is enough for Chromium (tests run headless); --with-deps adds OS libraries.
+      - name: Install Chromium and WebKit
         run: pnpm e2e:install --with-deps --only-shell
 
       - name: E2E

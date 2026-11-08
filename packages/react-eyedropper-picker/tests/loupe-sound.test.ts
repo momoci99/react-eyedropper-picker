@@ -258,7 +258,7 @@ describe('createLoupeSound', () => {
     sound.destroy()
   })
 
-  it('wakes the context after the tab is shown, skipping that sound', async () => {
+  it('wakes the context after the tab is shown and plays', async () => {
     mockUserActivation(true)
     const { sound, ctx } = await unlocked()
     setVisibility('hidden')
@@ -266,8 +266,17 @@ describe('createLoupeSound', () => {
     ctx.resume.mockClear()
     sound.play('pixel')
     expect(ctx.resume).toHaveBeenCalledTimes(1)
-    await Promise.resolve()
+    expect(ctx.started).toBeGreaterThan(0)
+    sound.destroy()
+  })
+
+  it('plays the first sound even if the new context starts suspended', () => {
+    // Safari: a context made after a gesture still starts suspended.
+    mockUserActivation(true)
+    const sound = make()
     sound.play('pixel')
+    const ctx = FakeAudioContext.instances[0]!
+    expect(ctx.resume).toHaveBeenCalledTimes(1)
     expect(ctx.started).toBeGreaterThan(0)
     sound.destroy()
   })
