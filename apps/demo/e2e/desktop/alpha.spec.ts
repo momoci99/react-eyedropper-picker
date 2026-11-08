@@ -3,7 +3,7 @@ import { expect, test } from '../helpers'
 test('alpha: the opacity slider sets #rrggbbaa; a pick is opaque', async ({
   page,
 }) => {
-  await page.goto('/')
+  await page.goto('/playground/')
   const card = page.locator('.picker-demo')
   const input = card.getByLabel('Hex color')
   const result = card.locator('.result-hex')

@@ -27,7 +27,7 @@ const frozenHex = (canvas: Locator, x: number, y: number) =>
 test('video: picks from a frozen frame, skipping the letterbox', async ({
   page,
 }) => {
-  await page.goto('/')
+  await page.goto('/playground/')
   const card = page.locator('.loupe-demo')
   await card.getByRole('radio', { name: 'Video' }).click()
   const video = card.locator('video.source')
@@ -66,7 +66,7 @@ test('video: picks from a frozen frame, skipping the letterbox', async ({
 })
 
 test('video: hover mode is off for a video', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/playground/')
   const card = page.locator('.loupe-demo')
   await card.getByRole('radio', { name: 'Video' }).click()
   const modes = card.getByRole('radiogroup', { name: 'Mode' })

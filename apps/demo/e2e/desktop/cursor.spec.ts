@@ -2,7 +2,7 @@ import type { Locator, Page } from '@playwright/test'
 import { expect, frame, loupeDemo, pixelPoint, test, truth } from '../helpers'
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/playground/')
   await expect(loupeDemo(page).image).toBeVisible()
 })
 

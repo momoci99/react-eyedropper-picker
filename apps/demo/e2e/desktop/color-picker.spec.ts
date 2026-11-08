@@ -1,7 +1,7 @@
 import { expect, pixelPoint, test, truth } from '../helpers'
 
 test('the loupe eyeDropper picks into ColorPicker', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/playground/')
   const card = page.locator('.picker-demo')
   const photo = card.locator('img.picker-photo')
   await photo.scrollIntoViewIfNeeded()

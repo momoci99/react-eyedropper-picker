@@ -1,7 +1,7 @@
 import { expect, frame, loupeDemo, pixelPoint, test, truth } from '../helpers'
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/playground/')
   await loupeDemo(page)
     .mode(/Click to open/)
     .click()
