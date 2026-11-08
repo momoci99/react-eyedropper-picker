@@ -1,0 +1,103 @@
+# API 레퍼런스
+
+진입점별 전체 export입니다. 패키지에 타입 선언(`.d.ts`)이 들어 있어서, 에디터에서 전체 시그니처와 주석을 볼 수 있습니다.
+
+## react-eyedropper-picker
+
+### 컴포넌트
+
+| 이름 | 설명 |
+| --- | --- |
+| `ColorPicker` | 완성형 피커. [Props](/ko/color-picker/#props) |
+| `SaturationPanel` | 채도·명도 패널. [부품](/ko/parts/#부품) |
+| `HueSlider` | 색상 슬라이더, 0–360. [부품](/ko/parts/#부품) |
+| `AlphaSlider` | 체커보드 위 투명도 슬라이더. [부품](/ko/parts/#부품) |
+| `EyeDropperButton` | 스포이드 아이콘 버튼. `<button>`의 모든 prop을 받습니다. |
+| `EyeDropperIcon` | 아이콘만(인라인 SVG). |
+
+### 훅
+
+| 이름 | 설명 |
+| --- | --- |
+| `useColorPicker` | UI 없는 피커 상태. [결과](/ko/parts/#usecolorpicker) |
+| `useColorHistory` | 최근 색. `localStorage` 보관 가능. [옵션](/ko/color-picker/#최근-색) |
+| `useEyeDropper` | 순정 EyeDropper API: `{ open, close, isSupported }`. [설명](/ko/parts/#useeyedropper) |
+
+### 함수
+
+| 이름 | 설명 |
+| --- | --- |
+| `isEyeDropperSupported` | `() => boolean`: 브라우저에 EyeDropper API가 있는지. |
+| `isValidHex` | `#rgb`나 `#rrggbb`인지(`#` 생략, 대소문자 무관). |
+| `normalizeHex` | 소문자 `#rrggbb`로, 아니면 null. |
+| `hexToRgb` / `rgbToHex` | hex ⇄ `{ r, g, b }`(0–255). |
+| `rgbToHsv` / `hsvToRgb` | `{ r, g, b }` ⇄ `{ h, s, v }`(0–360, 0–100, 0–100). |
+| `hexToHsv` / `hsvToHex` | hex ⇄ HSV. |
+| `normalizeHexAlpha` | `#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa`를 `#rrggbbaa`로, 아니면 null. |
+| `hexToRgba` / `rgbaToHex` | hex ⇄ `{ r, g, b, a }`(`a`는 0–1). |
+
+### 타입
+
+| 이름 | 설명 |
+| --- | --- |
+| `ColorPickerProps` | `ColorPicker`의 props. |
+| `SaturationPanelProps`, `HueSliderProps`, `AlphaSliderProps`, `EyeDropperButtonProps` | 부품의 props. |
+| `UseColorPickerOptions`, `UseColorPickerResult` | `useColorPicker`의 옵션과 결과. |
+| `UseColorHistoryOptions`, `UseColorHistoryResult` | `useColorHistory`의 옵션과 결과. |
+| `UseEyeDropperResult` | `useEyeDropper`의 결과. |
+| `ColorSelectionOptions`, `ColorSelectionResult` | 순정 스포이드 `open()`의 옵션(`signal`)과 결과(`sRGBHex`). |
+| `EyeDropperLike` | `eyeDropper`가 받는 것: `{ open, isSupported }`. |
+| `ColorPickerTheme` | `'light' \| 'dark' \| 'auto'`. |
+| `RGB`, `RGBA`, `HSV` | 색 객체. |
+
+## react-eyedropper-picker/loupe
+
+### 컴포넌트와 훅
+
+| 이름 | 설명 |
+| --- | --- |
+| `ImageColorPicker` | 언제든 색을 뽑을 수 있는 `<img>`. [가이드](/ko/loupe/#imagecolorpicker) |
+| `useLoupeEyeDropper` | 이미지, 캔버스, 영상에서 한 번 뽑기: `{ open, close, isSupported, isOpen }`. [가이드](/ko/loupe/#useloupeeyedropper) |
+
+### 상수
+
+| 이름 | 설명 |
+| --- | --- |
+| `eyeDropperCursor` | CSS `cursor` 값. `loupe.cursor`용 스포이드 아이콘. [커서](/ko/effects/#커서) |
+
+### 타입
+
+| 이름 | 설명 |
+| --- | --- |
+| `ImageColorPickerProps` | `ImageColorPicker`의 props. |
+| `ImageColorPickerLoupeOptions` | `LoupeOptions`와 `renderLabel`. |
+| `LoupeOptions` | [확대경 옵션](/ko/loupe/#옵션). |
+| `UseLoupeEyeDropperOptions`, `UseLoupeEyeDropperResult` | `useLoupeEyeDropper`의 옵션(`mode`, `source`, `loupe`)과 결과. |
+| `LoupeOpenOptions` | `open()` 옵션: `source`, `signal`. |
+| `PickMode` | `'auto' \| 'native' \| 'loupe'`. |
+| `PickSource` | `HTMLImageElement \| HTMLCanvasElement \| HTMLVideoElement`. |
+| `PickResult` | `open()`이 돌려주는 값. |
+| `LoupePickResult` | `onPick`이 받는 값. |
+| `LoupeShape` | `'circle' \| 'square'`. |
+| `SampleSize` | `1 \| 3 \| 5`. |
+| `LoupeSoundEvent`, `LoupeSoundOptions`, `LoupeSoundPlayer` | [소리](/ko/effects/#소리) 옵션. |
+
+## 결과 값
+
+```ts
+// useEyeDropper().open(), 그리고 EyeDropperLike.open이 돌려주는 값
+type ColorSelectionResult = { sRGBHex: string }
+
+// useLoupeEyeDropper().open()
+type PickResult = {
+  sRGBHex: string // #rrggbb
+  x?: number // 원본 픽셀 좌표, 확대경 모드에서만
+  y?: number
+  mode: 'native' | 'loupe'
+}
+
+// ImageColorPicker의 onPick, renderLabel
+type LoupePickResult = { sRGBHex: string; x: number; y: number; mode: 'loupe' }
+```
+
+오류는 순정 API처럼 `DOMException`입니다: `AbortError`(취소), `NotSupportedError`(스포이드 없음), `SecurityError`(다른 출처 픽셀), `InvalidStateError`(아직 프레임이 없는 영상).

@@ -1,0 +1,75 @@
+import SoundLoupe from '../../examples/SoundLoupe'
+import soundLoupeCode from '../../examples/SoundLoupe.tsx?code'
+import MotionLoupe from '../../examples/MotionLoupe'
+import motionLoupeCode from '../../examples/MotionLoupe.tsx?code'
+import CustomSound from '../../examples/CustomSound'
+import customSoundCode from '../../examples/CustomSound.tsx?code'
+
+# 소리, 진동, 모션
+
+확대경은 손에 쥔 도구처럼 느껴질 수 있습니다. 픽셀을 넘을 때 다이얼처럼 틱 소리를 내고, 색을 뽑으면 딸깍하고, 손을 부드럽게 따라옵니다. 여기 나오는 것은 모두 `ImageColorPicker`와 `useLoupeEyeDropper`의 `loupe` 옵션입니다. 소리와 진동은 **기본으로 꺼져 있습니다**.
+
+## 소리
+
+<Example code={soundLoupeCode}>
+  <SoundLoupe />
+</Example>
+
+`sound: true`로 켜는 소리:
+
+| 이벤트 | 언제 | 소리 |
+| --- | --- | --- |
+| `pixel` | 가운데가 다른 원본 픽셀로 옮겨 갈 때 | 틱. 빠르게 훑으면 부드러운 "드르륵" |
+| `zoom` | 배율이 한 단계를 넘을 때 (×1.1마다, 또는 `magnificationSteps`의 각 값) | 딸깍 |
+| `open` | 전체 화면 확대경이 열릴 때 (`useLoupeEyeDropper`, 또는 `ImageColorPicker`에서 Enter) | 짧은 "휙" |
+| `confirm` | 색을 뽑을 때 | 클릭 |
+| `cancel` | 전체 화면 확대경이 뽑지 않고 닫힐 때 | 낮은 음 |
+
+- 소리는 Web Audio로 합성합니다. 오디오 파일도, 네트워크 요청도 없습니다.
+- 브라우저는 사용자가 페이지와 상호작용하기 전까지 소리를 막습니다. `open()`과 이미지 누르기가 소리를 풀어 주므로, hover의 첫 틱은 페이지를 처음 클릭하기 전까지 안 들릴 수 있습니다.
+- `minTickInterval`보다 가까운 틱은 하나로 합치고, 빠르게 훑을수록 작아져서 소음이 되지 않습니다.
+- 탭이 숨겨져 있는 동안에는 소리가 멈춥니다.
+
+`true` 대신 옵션을 넘겨 조절할 수 있습니다.
+
+| 옵션 | 기본값 | 설명 |
+| --- | --- | --- |
+| `volume` | `0.5` | 0~1. |
+| `events` | 모두 켜짐 | 이벤트를 하나씩 끕니다. 예: `{ pixel: false }`. |
+| `minTickInterval` | `35` | 밀리초. 이보다 가까운 틱은 합칩니다. |
+| `play` | – | 이벤트의 소리를 직접 만든 소리로 바꿉니다. |
+
+### 직접 만든 소리
+
+`play`는 이벤트마다 함수 `(ctx, speed, output) => void`를 받습니다. 노드(또는 `AudioBuffer` 소스)는 `ctx.destination`이 아니라 `output`에 연결해야 `volume`이 적용됩니다. `speed`는 `pixel`과 `zoom`에서 0(느림)~1(빠름)이고, 나머지는 0입니다.
+
+<Example code={customSoundCode}>
+  <CustomSound />
+</Example>
+
+## 진동
+
+`haptics: true`는 픽셀 틱과 색을 뽑을 때 `navigator.vibrate`로 진동합니다. Android Chrome에서 동작하고, iOS Safari 같은 다른 곳에서는 아무 일도 하지 않습니다. 진동도 소리와 같은 사용자 동작 규칙을 따릅니다.
+
+## 모션
+
+<Example code={motionLoupeCode}>
+  <MotionLoupe />
+</Example>
+
+- `smoothing`(0~1, 기본 `0`): 확대경이 포인터로 뚝 옮겨 가지 않고 부드럽게 따라갑니다. 위치만 뒤따라갈 뿐, 뽑는 픽셀은 항상 포인터 아래 픽셀입니다. `0.2`~`0.4`가 자연스럽습니다.
+- `animate`(기본 `true`): 확대경이 나타날 때 커지고, 사라질 때 작아지며, 확대도 부드럽게 바뀝니다.
+- 사용자가 모션 줄이기를 설정하면(`prefers-reduced-motion: reduce`) 둘 다 꺼집니다.
+
+## 커서
+
+이미지 위에서는 기본으로 커서를 숨기고 확대경을 포인터 위치에 둡니다. 확대경의 가운데 픽셀이 커서 역할을 합니다. `cursor`에 CSS `cursor` 값을 주면 그 커서를 보여 주고, 확대경은 손가락 때처럼 포인터 위로 옮겨 가서 커서가 가리지 않습니다(창 위쪽 끝에서는 아래로).
+
+`eyeDropperCursor`는 바로 쓰는 스포이드 커서입니다. 끝이 클릭 지점이고, 외곽선이 있어서 어떤 색 위에서도 보입니다.
+
+```tsx
+import { eyeDropperCursor } from 'react-eyedropper-picker/loupe'
+
+<ImageColorPicker src="/photo.jpg" alt="" loupe={{ cursor: eyeDropperCursor }} />
+useLoupeEyeDropper({ source, loupe: { cursor: 'url(/pick.png) 2 22, crosshair' } })
+```

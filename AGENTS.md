@@ -47,7 +47,7 @@ Run `pnpm format && pnpm typecheck && pnpm test` before considering a change don
 - Declare every package you import (e.g. `@types/node` for `node:*` in config files). Don't rely on hoisting.
 - `sideEffects: false`: no top-level side effects in `src/`.
 - EyeDropper API is not available everywhere (Chromium only, not in jsdom). Guard with `isEyeDropperSupported`; mock it in tests.
-- Changes to `src/index.ts` exports are public API changes; call them out.
+- Changes to `src/index.ts` exports are public API changes; call them out. Add new exports to the docs API page (`apps/demo/src/docs/{en,ko}/api.mdx`); the docs e2e fails on a missing one.
 - Docs site (`apps/demo`): every page exists in `en` and `ko` with the same slug; add it to `NAV` in `src/site/routes.ts`. Write examples as `.tsx` files in `src/examples/` and import them twice (component + `?code`), never paste example code into MDX. Pages are prerendered and hydrated: no `window`/`document`/storage during render; wrap browser-only examples in `<Example client>`. The `docs` e2e project tests the built site (hydration errors fail it).
 - READMEs (root and package) are bilingual: each English paragraph or list is followed by its Korean version, headings read `English · 한국어`, table descriptions add Korean after `<br>`. Code blocks stay single. When you change a README, update both languages. Never touch the personal P.S. at the end of the root README.
 

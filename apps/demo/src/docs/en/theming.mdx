@@ -1,0 +1,45 @@
+import ThemedPickers from '../../examples/ThemedPickers'
+import themedPickersCode from '../../examples/ThemedPickers.tsx?code'
+
+# Theming
+
+`ColorPicker` has a light and a dark look, and every color is a CSS variable you can override.
+
+<Example code={themedPickersCode}>
+  <ThemedPickers />
+</Example>
+
+## theme
+
+- `'light'` (default) and `'dark'`: fixed colors.
+- `'auto'`: follows the reader's OS setting with CSS `light-dark()`. No JavaScript, so it is right on the first paint, server rendering included. Needs Chrome 123, Safari 17.5 or Firefox 120; older browsers should use `'light'` or `'dark'`.
+
+## CSS variables
+
+Set them on any element above the picker (`:root`, a wrapper class, an inline style). A variable wins over `theme`.
+
+| Variable | Used for | Light / dark default |
+| --- | --- | --- |
+| `--rep-bg` | Picker background | `#fff` / `#1f1f23` |
+| `--rep-fg` | Picker text | `#111` / `#f2f2f5` |
+| `--rep-border` | Input, button and swatch borders | `rgba(0,0,0,.15)` / `rgba(255,255,255,.18)` |
+| `--rep-input-bg` | Hex input background | `#fff` / `#2a2a30` |
+| `--rep-shadow` | Picker shadow color | `rgba(0,0,0,.12)` / `rgba(0,0,0,.5)` |
+| `--rep-loupe-ring` | Ring around the loupe | `#fff` |
+| `--rep-loupe-shadow` | Loupe shadow color | `rgba(0,0,0,.35)` |
+| `--rep-label-bg` | Hex label under the loupe | `rgba(0,0,0,.75)` |
+| `--rep-label-fg` | Hex label text | `#fff` |
+
+```css
+:root {
+  --rep-bg: #fdf6e3;
+  --rep-fg: #073642;
+  --rep-loupe-ring: #268bd2;
+}
+```
+
+The loupe is added to `<body>`, not inside your component, so set its variables on `:root`, or pass `loupe.className` and set them on that class.
+
+## Classes and styles
+
+`ColorPicker`, `SaturationPanel`, `HueSlider` and `AlphaSlider` take `className` and `style` for their root element; `style` is merged with the defaults. For a different layout altogether, [build your own](/parts/) from the parts.

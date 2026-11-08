@@ -1,0 +1,75 @@
+import SoundLoupe from '../../examples/SoundLoupe'
+import soundLoupeCode from '../../examples/SoundLoupe.tsx?code'
+import MotionLoupe from '../../examples/MotionLoupe'
+import motionLoupeCode from '../../examples/MotionLoupe.tsx?code'
+import CustomSound from '../../examples/CustomSound'
+import customSoundCode from '../../examples/CustomSound.tsx?code'
+
+# Sound, haptics and motion
+
+The loupe can feel like a physical tool: it ticks like a dial as it crosses pixels, clicks when you pick and glides after your hand. Everything here is an option on `loupe`, for both `ImageColorPicker` and `useLoupeEyeDropper`. Sound and haptics are **off by default**.
+
+## Sound
+
+<Example code={soundLoupeCode}>
+  <SoundLoupe />
+</Example>
+
+`sound: true` turns on these sounds:
+
+| Event | When | Sound |
+| --- | --- | --- |
+| `pixel` | The center moves to another source pixel | A tick; a soft "brrrt" when you sweep fast |
+| `zoom` | The zoom passes a step (every ×1.1, or each of `magnificationSteps`) | A detent tick |
+| `open` | The full-screen loupe opens (`useLoupeEyeDropper`, or Enter on `ImageColorPicker`) | A short whoosh |
+| `confirm` | A color is picked | A click |
+| `cancel` | The full-screen loupe closes without a pick | A low tone |
+
+- Sounds are made with Web Audio: no audio files, no network requests.
+- Browsers keep a page silent until the reader interacts with it. `open()` and pressing on the image unlock sound, so the first ticks of a hover can be silent until the first click on the page.
+- Ticks closer than `minTickInterval` merge into one, and fast sweeps get quieter, so it never turns into noise.
+- Sounds stop while the tab is hidden.
+
+Pass options instead of `true` to tune it:
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `volume` | `0.5` | 0 to 1. |
+| `events` | all on | Turn single events off, e.g. `{ pixel: false }`. |
+| `minTickInterval` | `35` | Milliseconds. Closer ticks merge. |
+| `play` | – | Replace an event's sound with your own. |
+
+### Your own sounds
+
+`play` takes a function per event: `(ctx, speed, output) => void`. Connect your nodes (or an `AudioBuffer` source) to `output`, not to `ctx.destination`, so `volume` still applies. `speed` is 0 (slow) to 1 (fast) for `pixel` and `zoom`, 0 for the others.
+
+<Example code={customSoundCode}>
+  <CustomSound />
+</Example>
+
+## Haptics
+
+`haptics: true` vibrates on pixel ticks and on pick, with `navigator.vibrate`. That works in Android Chrome; elsewhere, such as iOS Safari, it does nothing. Vibration follows the same gesture rule as sound.
+
+## Motion
+
+<Example code={motionLoupeCode}>
+  <MotionLoupe />
+</Example>
+
+- `smoothing` (0 to 1, default `0`): the loupe glides after the pointer instead of jumping. Only its position lags: the picked pixel is always the one under the pointer. `0.2` to `0.4` feels natural.
+- `animate` (default `true`): the loupe grows in when it appears, shrinks out when it goes, and zooms smoothly.
+- Both turn off when the reader prefers reduced motion (`prefers-reduced-motion: reduce`).
+
+## Cursor
+
+Over the image the cursor is hidden by default and the loupe sits on the pointer: its center pixel is the cursor. `cursor` takes any CSS `cursor` value to show instead. The loupe then moves above the pointer, as it does over a finger, so the cursor doesn't cover it (below it near the top of the window).
+
+`eyeDropperCursor` is a ready-made eye dropper: its tip is the hotspot, and an outline keeps it visible on any color.
+
+```tsx
+import { eyeDropperCursor } from 'react-eyedropper-picker/loupe'
+
+<ImageColorPicker src="/photo.jpg" alt="" loupe={{ cursor: eyeDropperCursor }} />
+useLoupeEyeDropper({ source, loupe: { cursor: 'url(/pick.png) 2 22, crosshair' } })
+```
