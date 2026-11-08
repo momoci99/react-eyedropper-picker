@@ -192,7 +192,9 @@
 .doc :not(pre) > code {
   padding: 1px 5px;
   border-radius: 5px;
-  background: var(--control);
+  /* Tinted from the text color: visible on the page and on cards, in both
+     themes (--control matches the light page background). */
+  background: color-mix(in srgb, var(--text) 8%, transparent);
   font-size: 0.9em;
 }
 

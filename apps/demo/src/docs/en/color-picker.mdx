@@ -1,0 +1,89 @@
+import BasicPicker from '../../examples/BasicPicker'
+import basicPickerCode from '../../examples/BasicPicker.tsx?code'
+import AlphaPicker from '../../examples/AlphaPicker'
+import alphaPickerCode from '../../examples/AlphaPicker.tsx?code'
+import HistoryPicker from '../../examples/HistoryPicker'
+import historyPickerCode from '../../examples/HistoryPicker.tsx?code'
+
+# ColorPicker
+
+The ready-made picker: a saturation panel, a hue slider, a hex input and an eye dropper button. Use it like an input, controlled or not.
+
+<Example code={basicPickerCode}>
+  <BasicPicker />
+</Example>
+
+## Props
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `value` | `string` | – | Controlled hex value. |
+| `defaultValue` | `string` | `'#000000'` | Initial value when uncontrolled. |
+| `onChange` | `(hex: string) => void` | – | Called with normalized `#rrggbb` (`#rrggbbaa` with `alpha`). |
+| `alpha` | `boolean` | `false` | Opacity slider; values become `#rrggbbaa`. |
+| `showEyeDropper` | `boolean` | `true` | Show the eye dropper button where it works. |
+| `eyeDropper` | `EyeDropperLike` | native | What the button opens. Pass a loupe to pick from an image in every browser ([Loupe](/loupe/#with-colorpicker)). |
+| `showInput` | `boolean` | `true` | Show the hex input. |
+| `theme` | `'light' \| 'dark' \| 'auto'` | `'light'` | `'auto'` follows the OS. |
+| `history` | `boolean \| UseColorHistoryOptions \| UseColorHistoryResult` | `false` | Recent picks under the input. |
+| `touchBubble` | `boolean` | `true` | A color bubble above the finger on touch drags. |
+| `className` | `string` | – | Root class name. |
+| `style` | `CSSProperties` | – | Root inline style, merged with the defaults. |
+
+The input accepts `#rgb` and `#rrggbb` (and the alpha forms with `alpha`). While you type a partial value the color stays; when you leave the input it shows the current color again.
+
+## Opacity
+
+`alpha` adds an opacity slider under the hue slider.
+
+<Example code={alphaPickerCode}>
+  <AlphaPicker />
+</Example>
+
+- Values are always `#rrggbbaa`: `ff` is opaque, `00` transparent. `#336699` comes back as `#336699ff`.
+- `value`, `defaultValue` and the input take `#rgb`, `#rgba`, `#rrggbb` and `#rrggbbaa`. No alpha digits means opaque.
+- A color from the eye dropper is opaque: pixels on screen have no transparency.
+- The preview and the history swatches show transparency over a checkerboard.
+
+## Recent colors
+
+`history` shows colors picked with the eye dropper as swatches under the input. Click one to use it again. Dragging and typing don't add to it.
+
+<Example code={historyPickerCode}>
+  <HistoryPicker />
+</Example>
+
+```tsx
+<ColorPicker history />                                            // in memory
+<ColorPicker history={{ storageKey: 'my-app-colors', max: 12 }} /> // kept in localStorage
+```
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `max` | `8` | Most colors kept. |
+| `storageKey` | – | Save to `localStorage` under this key, synced across tabs and pickers with the same key. |
+| `defaultColors` | `[]` | Starting colors, used while nothing is stored. |
+
+`useColorHistory` is the same history as a hook: draw your own swatches, or share one history between pickers by passing its result to `history`.
+
+```tsx
+const history = useColorHistory({ storageKey: 'my-app-colors' })
+// history.colors: newest first; history.add(hex), history.remove(hex), history.clear()
+
+<ColorPicker history={history} />
+<ImageColorPicker src="/photo.jpg" onPick={(c) => history.add(c.sRGBHex)} />
+```
+
+With `storageKey`, the server renders `defaultColors` and the browser reads storage while hydrating. If storage is blocked or full, the history still works while the page is open.
+
+## Touch
+
+On touch screens the thumb covers the handle. While you drag the panel or a slider by touch, a bubble above the finger shows the color under it. Mouse and pen don't show it. Turn it off with `touchBubble={false}`.
+
+## Keyboard
+
+Each part is a slider for screen readers and keyboards (`role="slider"`).
+
+- Saturation panel: left and right change saturation, up and down change brightness, by 1% (Shift: 10%).
+- Hue slider: arrows move by 1° (Shift: 10°), Home and End jump to 0° and 360°.
+- Opacity slider: arrows move by 1% (Shift: 10%), Home and End jump to 0% and 100%.

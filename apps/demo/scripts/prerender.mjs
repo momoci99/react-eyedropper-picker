@@ -49,11 +49,39 @@ const page = async (path) => {
     )
 }
 
+const pages = new Map()
 for (const path of ALL_PATHS) {
+  const html = await page(path)
+  pages.set(path, html)
   const out = join(dist, path, 'index.html')
   await mkdir(dirname(out), { recursive: true })
-  await writeFile(out, await page(path))
+  await writeFile(out, html)
 }
+
+// Every link between pages goes to a page that exists, and every #anchor
+// to a heading on it.
+const ids = new Map(
+  [...pages].map(([path, html]) => [
+    path,
+    new Set([...html.matchAll(/ id="([^"]+)"/g)].map((m) => m[1])),
+  ])
+)
+const broken = []
+for (const [path, html] of pages) {
+  for (const [, href] of html.matchAll(/ href="([^"]+)"/g)) {
+    if (!href.startsWith(base) || href.startsWith(`${base}assets/`)) continue
+    const [target, hash] = href.slice(base.length - 1).split('#')
+    const known = ids.get(target)
+    if (!known) broken.push(`${path} -> ${href}`)
+    else if (hash && !known.has(decodeURIComponent(hash)))
+      broken.push(`${path} -> ${href}`)
+  }
+  for (const [, hash] of html.matchAll(/ href="#([^"]+)"/g)) {
+    if (!ids.get(path).has(decodeURIComponent(hash)))
+      broken.push(`${path} -> #${hash}`)
+  }
+}
+if (broken.length) throw new Error(`Broken links:\n${broken.join('\n')}`)
 // GitHub Pages serves 404.html for unknown paths. It renders from scratch
 // in the browser (its data-path matches no real path).
 await writeFile(join(dist, '404.html'), await page('/404/'))

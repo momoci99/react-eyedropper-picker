@@ -1,14 +1,19 @@
+import { DOCS, docPath, LANGS } from '../../src/site/routes'
 import { expect, frame, pixelPoint, test, truth } from '../helpers'
 
 // Runs against the built, prerendered site (vite preview), so hydration
 // is checked too: a mismatch logs an error and fails the test.
 
-const PAGES = [
-  ['/', 'react-eyedropper-picker'],
-  ['/getting-started/', 'Getting started'],
-  ['/ko/', 'react-eyedropper-picker'],
-  ['/ko/getting-started/', '시작하기'],
-] as const
+/** Every doc page and its h1 (the introduction's h1 is the package name). */
+const PAGES = LANGS.flatMap((lang) =>
+  DOCS.map(
+    (d) =>
+      [
+        docPath(lang, d.slug),
+        d.slug === 'index' ? 'react-eyedropper-picker' : d.title[lang],
+      ] as const
+  )
+)
 
 for (const [path, h1] of PAGES) {
   test(`${path} is prerendered and hydrates`, async ({ page }) => {
@@ -118,4 +123,46 @@ test('the example on the home page picks a color', async ({ page }) => {
   await expect(page.locator('.example-live code').first()).toHaveText(
     await truth(image, 2, 2)
   )
+})
+
+test.describe('loupe page examples', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/loupe/')
+  })
+
+  test('useLoupeEyeDropper: the button opens the loupe, a click picks', async ({
+    page,
+  }) => {
+    const example = page.locator('figure.example').nth(1)
+    const image = example.getByRole('img', { name: 'Pixel art landscape' })
+    await example.getByRole('button', { name: 'Pick a color' }).click()
+    await expect(page.getByRole('dialog')).toBeVisible()
+    const point = await pixelPoint(image, 20, 25)
+    await page.mouse.move(...point, { steps: 3 })
+    await frame(page)
+    await page.mouse.click(...point)
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect(example.locator('code').first()).toHaveText(
+      await truth(image, 20, 25)
+    )
+  })
+
+  test('ColorPicker with the loupe: picks into the input and history', async ({
+    page,
+  }) => {
+    const example = page.locator('figure.example').nth(2)
+    const image = example.getByRole('img', { name: 'Pixel art landscape' })
+    await example.getByRole('button', { name: 'Pick a color' }).click()
+    await expect(page.getByRole('dialog')).toBeVisible()
+    // Measured after the click: clicking may scroll the page.
+    const point = await pixelPoint(image, 10, 28)
+    await page.mouse.move(...point, { steps: 3 })
+    await frame(page)
+    await page.mouse.click(...point)
+    const color = await truth(image, 10, 28)
+    await expect(example.getByLabel('Hex color')).toHaveValue(color)
+    await expect(
+      example.getByRole('group', { name: 'Recent colors' }).getByRole('button')
+    ).toHaveCount(1)
+  })
 })
