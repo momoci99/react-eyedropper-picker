@@ -1,0 +1,103 @@
+# API reference
+
+Every export, by entry. Types ship with the package (`.d.ts`), so your editor shows the full signatures and comments.
+
+## react-eyedropper-picker
+
+### Components
+
+| Name | Description |
+| --- | --- |
+| `ColorPicker` | The ready-made picker. [Props](/color-picker/#props) |
+| `SaturationPanel` | Saturation and brightness panel. [Parts](/parts/#parts) |
+| `HueSlider` | Hue slider, 0–360. [Parts](/parts/#parts) |
+| `AlphaSlider` | Opacity slider over a checkerboard. [Parts](/parts/#parts) |
+| `EyeDropperButton` | Button with the eye dropper icon; takes any `<button>` prop. |
+| `EyeDropperIcon` | The icon alone (an inline SVG). |
+
+### Hooks
+
+| Name | Description |
+| --- | --- |
+| `useColorPicker` | Picker state without UI. [Result](/parts/#usecolorpicker) |
+| `useColorHistory` | Recent colors, optionally in `localStorage`. [Options](/color-picker/#recent-colors) |
+| `useEyeDropper` | The native EyeDropper API: `{ open, close, isSupported }`. [Details](/parts/#useeyedropper) |
+
+### Functions
+
+| Name | Description |
+| --- | --- |
+| `isEyeDropperSupported` | `() => boolean`: the browser has the EyeDropper API. |
+| `isValidHex` | `#rgb` or `#rrggbb` (with or without `#`, any case). |
+| `normalizeHex` | To lowercase `#rrggbb`, or null. |
+| `hexToRgb` / `rgbToHex` | Hex ⇄ `{ r, g, b }` (0–255). |
+| `rgbToHsv` / `hsvToRgb` | `{ r, g, b }` ⇄ `{ h, s, v }` (0–360, 0–100, 0–100). |
+| `hexToHsv` / `hsvToHex` | Hex ⇄ HSV. |
+| `normalizeHexAlpha` | `#rgb`, `#rgba`, `#rrggbb` or `#rrggbbaa` to `#rrggbbaa`, or null. |
+| `hexToRgba` / `rgbaToHex` | Hex ⇄ `{ r, g, b, a }` (`a` 0–1). |
+
+### Types
+
+| Name | Description |
+| --- | --- |
+| `ColorPickerProps` | Props of `ColorPicker`. |
+| `SaturationPanelProps`, `HueSliderProps`, `AlphaSliderProps`, `EyeDropperButtonProps` | Props of the parts. |
+| `UseColorPickerOptions`, `UseColorPickerResult` | Options and result of `useColorPicker`. |
+| `UseColorHistoryOptions`, `UseColorHistoryResult` | Options and result of `useColorHistory`. |
+| `UseEyeDropperResult` | Result of `useEyeDropper`. |
+| `ColorSelectionOptions`, `ColorSelectionResult` | `open()` options (`signal`) and result (`sRGBHex`) of the native eye dropper. |
+| `EyeDropperLike` | What `eyeDropper` takes: `{ open, isSupported }`. |
+| `ColorPickerTheme` | `'light' \| 'dark' \| 'auto'`. |
+| `RGB`, `RGBA`, `HSV` | Color objects. |
+
+## react-eyedropper-picker/loupe
+
+### Components and hooks
+
+| Name | Description |
+| --- | --- |
+| `ImageColorPicker` | An `<img>` you can always pick from. [Guide](/loupe/#imagecolorpicker) |
+| `useLoupeEyeDropper` | Pick once from an image, canvas or video: `{ open, close, isSupported, isOpen }`. [Guide](/loupe/#useloupeeyedropper) |
+
+### Constants
+
+| Name | Description |
+| --- | --- |
+| `eyeDropperCursor` | A CSS `cursor` value: an eye dropper icon for `loupe.cursor`. [Cursor](/effects/#cursor) |
+
+### Types
+
+| Name | Description |
+| --- | --- |
+| `ImageColorPickerProps` | Props of `ImageColorPicker`. |
+| `ImageColorPickerLoupeOptions` | `LoupeOptions` plus `renderLabel`. |
+| `LoupeOptions` | The [loupe options](/loupe/#options). |
+| `UseLoupeEyeDropperOptions`, `UseLoupeEyeDropperResult` | Options (`mode`, `source`, `loupe`) and result of `useLoupeEyeDropper`. |
+| `LoupeOpenOptions` | `open()` options: `source`, `signal`. |
+| `PickMode` | `'auto' \| 'native' \| 'loupe'`. |
+| `PickSource` | `HTMLImageElement \| HTMLCanvasElement \| HTMLVideoElement`. |
+| `PickResult` | What `open()` resolves with. |
+| `LoupePickResult` | What `onPick` gets. |
+| `LoupeShape` | `'circle' \| 'square'`. |
+| `SampleSize` | `1 \| 3 \| 5`. |
+| `LoupeSoundEvent`, `LoupeSoundOptions`, `LoupeSoundPlayer` | [Sound](/effects/#sound) options. |
+
+## Results
+
+```ts
+// useEyeDropper().open(), and what EyeDropperLike.open resolves with
+type ColorSelectionResult = { sRGBHex: string }
+
+// useLoupeEyeDropper().open()
+type PickResult = {
+  sRGBHex: string // #rrggbb
+  x?: number // source pixel, loupe mode only
+  y?: number
+  mode: 'native' | 'loupe'
+}
+
+// ImageColorPicker onPick, renderLabel
+type LoupePickResult = { sRGBHex: string; x: number; y: number; mode: 'loupe' }
+```
+
+Errors are `DOMException`s, like the native API: `AbortError` (cancelled), `NotSupportedError` (no eye dropper), `SecurityError` (cross-origin pixels), `InvalidStateError` (a video without a frame yet).

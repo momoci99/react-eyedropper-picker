@@ -56,6 +56,43 @@ export const NAV: { title: Text; items: DocItem[] }[] = [
           ko: '모든 브라우저에서 이미지, 캔버스, 영상의 색을 픽셀 단위로 정확하게 뽑습니다.',
         },
       },
+      {
+        slug: 'effects',
+        title: { en: 'Sound, haptics and motion', ko: '소리, 진동, 모션' },
+        description: {
+          en: 'Ticks, clicks, vibration, smooth tracking, animations and the cursor.',
+          ko: '틱, 딸깍, 진동, 부드러운 추적, 애니메이션, 커서.',
+        },
+      },
+      {
+        slug: 'theming',
+        title: { en: 'Theming', ko: '테마' },
+        description: {
+          en: 'Light, dark and auto themes, and the CSS variables behind every color.',
+          ko: '라이트, 다크, 자동 테마와 모든 색을 정하는 CSS 변수.',
+        },
+      },
+    ],
+  },
+  {
+    title: { en: 'Reference', ko: '레퍼런스' },
+    items: [
+      {
+        slug: 'api',
+        title: { en: 'API reference', ko: 'API 레퍼런스' },
+        description: {
+          en: 'Every export of react-eyedropper-picker and react-eyedropper-picker/loupe.',
+          ko: 'react-eyedropper-picker와 react-eyedropper-picker/loupe의 모든 export.',
+        },
+      },
+      {
+        slug: 'browser-support',
+        title: { en: 'Browser support', ko: '브라우저 지원' },
+        description: {
+          en: 'What works where, requirements, and how it is tested.',
+          ko: '어디서 무엇이 되는지, 요구 사항, 테스트 방법.',
+        },
+      },
     ],
   },
 ]

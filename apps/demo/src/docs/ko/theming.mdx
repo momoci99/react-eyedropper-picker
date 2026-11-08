@@ -1,0 +1,45 @@
+import ThemedPickers from '../../examples/ThemedPickers'
+import themedPickersCode from '../../examples/ThemedPickers.tsx?code'
+
+# 테마
+
+`ColorPicker`에는 라이트와 다크 모양이 있고, 모든 색은 바꿀 수 있는 CSS 변수입니다.
+
+<Example code={themedPickersCode}>
+  <ThemedPickers />
+</Example>
+
+## theme
+
+- `'light'`(기본)와 `'dark'`: 고정된 색.
+- `'auto'`: CSS `light-dark()`로 사용자의 OS 설정을 따릅니다. JavaScript를 쓰지 않아서 서버 렌더링을 포함해 첫 화면부터 맞게 나옵니다. Chrome 123, Safari 17.5, Firefox 120 이상이 필요합니다. 더 오래된 브라우저에서는 `'light'`나 `'dark'`를 쓰세요.
+
+## CSS 변수
+
+피커 바깥 어느 요소에든(`:root`, 감싸는 요소의 클래스, 인라인 스타일) 지정하세요. 변수가 `theme`보다 우선합니다.
+
+| 변수 | 쓰이는 곳 | 라이트 / 다크 기본값 |
+| --- | --- | --- |
+| `--rep-bg` | 피커 배경 | `#fff` / `#1f1f23` |
+| `--rep-fg` | 피커 글자 | `#111` / `#f2f2f5` |
+| `--rep-border` | 입력창, 버튼, 견본 테두리 | `rgba(0,0,0,.15)` / `rgba(255,255,255,.18)` |
+| `--rep-input-bg` | hex 입력창 배경 | `#fff` / `#2a2a30` |
+| `--rep-shadow` | 피커 그림자 색 | `rgba(0,0,0,.12)` / `rgba(0,0,0,.5)` |
+| `--rep-loupe-ring` | 확대경 테두리 | `#fff` |
+| `--rep-loupe-shadow` | 확대경 그림자 색 | `rgba(0,0,0,.35)` |
+| `--rep-label-bg` | 확대경 아래 hex 라벨 | `rgba(0,0,0,.75)` |
+| `--rep-label-fg` | hex 라벨 글자 | `#fff` |
+
+```css
+:root {
+  --rep-bg: #fdf6e3;
+  --rep-fg: #073642;
+  --rep-loupe-ring: #268bd2;
+}
+```
+
+확대경은 컴포넌트 안이 아니라 `<body>`에 붙기 때문에, 확대경 변수는 `:root`에 지정하거나 `loupe.className`을 넘기고 그 클래스에 지정하세요.
+
+## 클래스와 스타일
+
+`ColorPicker`, `SaturationPanel`, `HueSlider`, `AlphaSlider`는 루트 요소의 `className`과 `style`을 받습니다. `style`은 기본값과 합쳐집니다. 배치를 완전히 바꾸고 싶다면 부품으로 [직접 조합하세요](/ko/parts/).

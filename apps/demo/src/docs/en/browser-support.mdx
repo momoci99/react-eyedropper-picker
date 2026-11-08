@@ -1,0 +1,31 @@
+# Browser support
+
+## Requirements
+
+- React 19.2 or newer.
+- `react-eyedropper-picker/loupe` also needs `react-dom` (for `renderLabel`). The base entry does not.
+- Server rendering is safe: nothing touches `window`, `document` or audio until the browser runs your component.
+
+## Features
+
+| Feature | Chrome, Edge, Opera | Firefox | Safari | iOS Safari | Android Chrome |
+| --- | --- | --- | --- | --- | --- |
+| `ColorPicker` and parts | Yes | Yes | Yes | Yes | Yes |
+| Native eye dropper (whole screen) | Yes, desktop | No | No | No | No |
+| Loupe (`/loupe`) | Yes | Yes | Yes | Yes | Yes |
+| Touch: drag, lift, pinch | Touch screens | Touch screens | Touch screens | Yes | Yes |
+| `theme="auto"` | 123+ | 120+ | 17.5+ | 17.5+ | 123+ |
+| Sound | Yes | Yes | Yes | Yes | Yes |
+| Haptics | No | No | No | No | Yes |
+
+- Where the native eye dropper is missing, the eye dropper button is hidden. Pass a loupe as `eyeDropper` to show it everywhere: see [Loupe](/loupe/#with-colorpicker).
+- Sound starts after the reader's first interaction with the page (a browser rule).
+- `theme="auto"` uses CSS `light-dark()`. In older browsers use `'light'` or `'dark'`.
+
+## How it is tested
+
+- Unit tests run in jsdom on every change.
+- Browser tests (Playwright) run in CI on every change: Chromium with a mouse, Chromium with touch emulation, and WebKit (Safari's engine) with a mouse. They check picked colors against the real image pixels.
+- By hand: Safari and Firefox on macOS, and vibration in Android Chrome.
+
+Found a problem in your browser? [Open an issue](https://github.com/momoci99/react-eyedropper-picker/issues).
