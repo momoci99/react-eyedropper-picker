@@ -123,6 +123,23 @@ describe('ColorPicker', () => {
     rerender(<ColorPicker value="#00ff00" />)
     expect(screen.getByLabelText('Hex color')).toHaveValue('#00ff00')
   })
+
+  it('keeps partial typing until blur, then shows the color', () => {
+    render(<ColorPicker defaultValue="#ff0000" />)
+    const input = screen.getByLabelText('Hex color')
+    fireEvent.change(input, { target: { value: '#00' } })
+    expect(input).toHaveValue('#00')
+    fireEvent.blur(input)
+    expect(input).toHaveValue('#ff0000')
+  })
+
+  it('a new controlled value replaces what was typed', () => {
+    const { rerender } = render(<ColorPicker value="#ff0000" />)
+    const input = screen.getByLabelText('Hex color')
+    fireEvent.change(input, { target: { value: '#00' } })
+    rerender(<ColorPicker value="#00ff00" />)
+    expect(input).toHaveValue('#00ff00')
+  })
 })
 
 describe('ColorPicker history', () => {

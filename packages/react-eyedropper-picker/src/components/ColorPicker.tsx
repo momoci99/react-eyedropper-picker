@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useState, type CSSProperties } from 'react'
 import {
   useColorPicker,
   type UseColorPickerOptions,
@@ -67,17 +67,12 @@ export const ColorPicker = ({
   )
   const recent = history ? (external ?? own) : null
 
-  // Local draft so typing partial hex doesn't get overwritten
-  const [draft, setDraft] = useState(hex)
-  useEffect(() => {
-    setDraft((d) => (normalize(d) === hex ? d : hex))
-  }, [hex, normalize])
-  // Turning alpha on or off changes the format: show the new one.
-  const [draftAlpha, setDraftAlpha] = useState(options.alpha)
-  if (draftAlpha !== options.alpha) {
-    setDraftAlpha(options.alpha)
-    setDraft(hex)
-  }
+  // What the user typed, kept while it still stands for the current color
+  // (partial hex, short form). Derived, not synced in an effect: any other
+  // change of `hex` (a drag, a controlled value, turning alpha on or off)
+  // shows `hex` at once.
+  const [draft, setDraft] = useState<{ text: string; hex: string } | null>(null)
+  const shown = draft && draft.hex === hex ? draft.text : hex
 
   return (
     <div
@@ -128,13 +123,17 @@ export const ColorPicker = ({
         {showInput && (
           <input
             aria-label="Hex color"
-            value={draft}
+            value={shown}
             spellCheck={false}
             onChange={(e) => {
-              setDraft(e.target.value)
-              setHex(e.target.value)
+              const text = e.target.value
+              // Valid: the color it becomes. Partial: the color stays.
+              setDraft({
+                text,
+                hex: setHex(text) ? (normalize(text) ?? hex) : hex,
+              })
             }}
-            onBlur={() => setDraft(hex)}
+            onBlur={() => setDraft(null)}
             style={{
               flex: 1,
               minWidth: 0,

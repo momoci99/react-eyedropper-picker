@@ -17,7 +17,7 @@ apps/demo                          # private docs site + playground (Vite); alia
   src/site/                        # router, layout, routes.ts (sidebar order = NAV), language suggestion
   src/examples/                    # live examples; MDX imports `X.tsx` (runs) and `X.tsx?code` (shown source)
   scripts/prerender.mjs            # build: SSR bundle → one HTML per route + 404.html
-  e2e/desktop, e2e/mobile          # Playwright checks in real Chromium (mouse / touch)
+  e2e/desktop, e2e/mobile, e2e/docs # Playwright: desktop in Chromium + WebKit (mouse), mobile in Chromium (touch), docs on the built site
 ```
 
 ## Commands (run from root, Node 24 per .nvmrc)
@@ -32,7 +32,7 @@ pnpm build        # build library to packages/react-eyedropper-picker/dist
 pnpm size         # after build: minified + gzip size per entry, fails over budget
 pnpm format       # prettier (format:check in CI)
 pnpm e2e          # Playwright against the demo (own server on :5199)
-pnpm e2e:install  # once: download Playwright's Chromium
+pnpm e2e:install  # once: download Playwright's Chromium and WebKit
 ```
 
 Run `pnpm format && pnpm typecheck && pnpm test` before considering a change done. For library source changes, also `pnpm build && pnpm size`: budgets live in `packages/react-eyedropper-picker/scripts/size.mjs`; raise one only on purpose and say why in the PR. For pointer, touch, loupe or demo changes, also run `pnpm e2e`. jsdom has no layout or real pixels, so e2e is where picked colors are checked against the image.
