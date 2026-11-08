@@ -75,7 +75,7 @@ describe('useColorPicker alpha', () => {
     )
     let picked: string | null = null
     await act(async () => {
-      picked = await result.current.pickFromScreen()
+      picked = await result.current.pickColor()
     })
     expect(picked).toBe('#123456ff')
     expect(onChange).toHaveBeenLastCalledWith('#123456ff')

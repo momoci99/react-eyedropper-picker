@@ -16,7 +16,7 @@ import {
   type MagnificationConfig,
 } from './magnification'
 import type { LoupeFeedback } from './feedback'
-import type { LoupeSource, PixelBuffer, SampleSize } from './pixels'
+import type { PickSource, PixelBuffer, SampleSize } from './pixels'
 import { reducedMotionQuery } from './motion'
 import { createTouchTracker } from './touch'
 import { createLoupeView, pixelHex, type LoupeShape } from './view'
@@ -32,7 +32,7 @@ export type LoupePickResult = {
 }
 
 export type LoupeSessionOptions = {
-  source: LoupeSource
+  source: PickSource
   /** Pixels read from `source` with `readPixels`. */
   buffer: PixelBuffer
   config: MagnificationConfig

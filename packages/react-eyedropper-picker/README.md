@@ -142,19 +142,23 @@ Build your own UI with `useColorPicker` plus the `SaturationPanel` / `HueSlider`
 import { useColorPicker, SaturationPanel, HueSlider, EyeDropperButton } from 'react-eyedropper-picker'
 
 function MyPicker() {
-  const { hex, hsv, setHsv, pickFromScreen, isEyeDropperSupported } = useColorPicker({
+  const { hex, hsv, setHsv, pickColor, canPickColor } = useColorPicker({
     defaultValue: '#ff0000',
   })
   return (
     <div>
       <SaturationPanel hsv={hsv} onChange={setHsv} />
       <HueSlider hue={hsv.h} onChange={(h) => setHsv({ ...hsv, h })} />
-      {isEyeDropperSupported && <EyeDropperButton onClick={pickFromScreen} />}
+      {canPickColor && <EyeDropperButton onClick={pickColor} />}
       <span>{hex}</span>
     </div>
   )
 }
 ```
+
+`pickColor` opens the eye dropper (native, or the loupe you pass as `eyeDropper`) and applies the color. Show the button only when `canPickColor` is true. The old names `pickFromScreen` and `isEyeDropperSupported` still work in 0.x and are removed in 1.0.
+
+`pickColor`는 스포이드(순정, 또는 `eyeDropper`로 넘긴 확대경)를 열고 뽑은 색을 적용합니다. 버튼은 `canPickColor`가 true일 때만 보여 주세요. 예전 이름 `pickFromScreen`, `isEyeDropperSupported`는 0.x에서는 계속 동작하고 1.0에서 없어집니다.
 
 ### Eye dropper only · 스포이드만 쓰기
 

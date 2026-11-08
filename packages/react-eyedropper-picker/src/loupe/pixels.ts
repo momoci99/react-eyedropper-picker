@@ -1,5 +1,8 @@
-export type LoupeSource =
-  HTMLImageElement | HTMLCanvasElement | HTMLVideoElement
+/**
+ * What the loupe can pick from. A `<video>` is picked from the frame showing
+ * when the loupe opens; that frame covers the video until it closes.
+ */
+export type PickSource = HTMLImageElement | HTMLCanvasElement | HTMLVideoElement
 
 /** RGBA pixels at the source's own resolution, row-major, 4 bytes per pixel. */
 export type PixelBuffer = {
@@ -14,7 +17,7 @@ export type SampleSize = 1 | 3 | 5
 export type RGBA = { r: number; g: number; b: number; a: number }
 
 /** A `<video>`: picked from the frame showing when the loupe opens. */
-export const isVideo = (source: LoupeSource): source is HTMLVideoElement =>
+export const isVideo = (source: PickSource): source is HTMLVideoElement =>
   'videoWidth' in source
 
 /**
@@ -22,7 +25,7 @@ export const isVideo = (source: LoupeSource): source is HTMLVideoElement =>
  * bitmap size for canvases.
  */
 export const getSourceSize = (
-  source: LoupeSource
+  source: PickSource
 ): { width: number; height: number } =>
   'naturalWidth' in source
     ? { width: source.naturalWidth, height: source.naturalHeight }
@@ -43,7 +46,7 @@ const HAVE_CURRENT_DATA = 2
  * without CORS throws `SecurityError` from `getImageData`; that error is
  * passed through.
  */
-export const readPixels = (source: LoupeSource): PixelBuffer => {
+export const readPixels = (source: PickSource): PixelBuffer => {
   const { width, height } = getSourceSize(source)
   if (
     width === 0 ||

@@ -55,16 +55,8 @@ export const ColorPicker = ({
   style,
   ...options
 }: ColorPickerProps) => {
-  const {
-    hex,
-    hsv,
-    alpha,
-    setHex,
-    setHsv,
-    setAlpha,
-    pickFromScreen,
-    isEyeDropperSupported,
-  } = useColorPicker(options)
+  const { hex, hsv, alpha, setHex, setHsv, setAlpha, pickColor, canPickColor } =
+    useColorPicker(options)
   const normalize = options.alpha ? normalizeHexAlpha : normalizeHex
 
   const external = isHistoryResult(history) ? history : null
@@ -158,10 +150,10 @@ export const ColorPicker = ({
             }}
           />
         )}
-        {showEyeDropper && isEyeDropperSupported && (
+        {showEyeDropper && canPickColor && (
           <EyeDropperButton
             onClick={() =>
-              void pickFromScreen().then((picked) => {
+              void pickColor().then((picked) => {
                 if (picked) recent?.add(picked)
               })
             }

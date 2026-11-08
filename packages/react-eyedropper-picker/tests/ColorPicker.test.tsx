@@ -7,7 +7,7 @@ import {
   within,
 } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ColorPicker, useColorHistory } from '../src'
+import { ColorPicker, useColorHistory, useColorPicker } from '../src'
 
 afterEach(() => {
   delete (window as any).EyeDropper
@@ -99,6 +99,23 @@ describe('ColorPicker', () => {
     await vi.waitFor(() =>
       expect(screen.getByLabelText('Hex color')).toHaveValue('#abcdef')
     )
+  })
+
+  it('useColorPicker: pickColor and canPickColor, old names still work', async () => {
+    const eyeDropper = {
+      open: vi.fn(async () => ({ sRGBHex: '#123456' })),
+      isSupported: true,
+    }
+    const { result } = renderHook(() => useColorPicker({ eyeDropper }))
+    expect(result.current.canPickColor).toBe(true)
+    expect(result.current.isEyeDropperSupported).toBe(true)
+    expect(result.current.pickFromScreen).toBe(result.current.pickColor)
+    let picked: string | null = null
+    await act(async () => {
+      picked = await result.current.pickColor()
+    })
+    expect(picked).toBe('#123456')
+    expect(result.current.hex).toBe('#123456')
   })
 
   it('follows controlled value', () => {

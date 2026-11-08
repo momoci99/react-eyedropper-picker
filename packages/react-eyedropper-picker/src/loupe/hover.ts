@@ -9,7 +9,7 @@ import {
   type MagnificationConfig,
 } from './magnification'
 import type { LoupeFeedback } from './feedback'
-import type { LoupeSource, PixelBuffer, SampleSize } from './pixels'
+import type { PickSource, PixelBuffer, SampleSize } from './pixels'
 import {
   CURSOR_GAP,
   loupeAboveCursor,
@@ -25,7 +25,7 @@ import {
 } from './view'
 
 export type LoupeHoverOptions = {
-  source: LoupeSource
+  source: PickSource
   /**
    * Pixels of `source`, read on first use. Return null while the source
    * has no pixels yet (image loading); throwing reports to `onError`.
